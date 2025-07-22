@@ -25,7 +25,7 @@ const App = () => {
     <nav className="fixed top-0 left-0 right-0 z-40 bg-[#f9dc41] shadow-md px-4 mt-20 sm:mt-14 lg:mt-8">
       <div className="container mx-auto flex items-center justify-between py-3">
         <div className="flex items-center space-x-3">
-          <img src="/logo.svg" alt="Logo" className="w-10 h-10" />
+          <img src="/logo.svg" alt="Logo" width={50} height={50} />
           <h1 className="text-lg sm:text-xl font-bold text-gray-800">
             SANDHAN GROUP OF INSTITUTE
           </h1>
