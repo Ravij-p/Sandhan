@@ -47,51 +47,55 @@ const CoursePage = ({ courseType }) => {
             {course.title}
           </h1>
           <p className="text-lg text-gray-700 mb-8">{course.description}</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
-            <div className="bg-white p-6 rounded-xl shadow-md">
-              <h3
-                className="text-xl font-bold mb-4"
-                style={{ color: "#163233" }}
-              >
-                Course Features
-              </h3>
-              <ul className="text-left text-gray-700 space-y-2">
-                <li>• Expert Faculty</li>
-                <li>• Comprehensive Study Material</li>
-                <li>• Regular Mock Tests</li>
-                <li>• Doubt Clearing Sessions</li>
-              </ul>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow-md">
-              <h3
-                className="text-xl font-bold mb-4"
-                style={{ color: "#163233" }}
-              >
-                Duration & Fees
-              </h3>
-              <div className="text-left text-gray-700 space-y-2">
-                <div className="flex justify-between">
-                  <span>Duration:</span>
-                  <span>12 months</span>
+          {course.title !== "UPSC Exam Prelims + Mains" && (
+            <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
+                <div className="bg-white p-6 rounded-xl shadow-md">
+                  <h3
+                    className="text-xl font-bold mb-4"
+                    style={{ color: "#163233" }}
+                  >
+                    Course Features
+                  </h3>
+                  <ul className="text-left text-gray-700 space-y-2">
+                    <li>• Expert Faculty</li>
+                    <li>• Comprehensive Study Material</li>
+                    <li>• Regular Mock Tests</li>
+                    <li>• Doubt Clearing Sessions</li>
+                  </ul>
                 </div>
-                <div className="flex justify-between">
-                  <span>Batch Size:</span>
-                  <span>50 students</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Fees:</span>
-                  <del className="font-bold">{course.cancelled_fee}</del>
-                  <span className="font-bold">{course.fees}</span>
+                <div className="bg-white p-6 rounded-xl shadow-md">
+                  <h3
+                    className="text-xl font-bold mb-4"
+                    style={{ color: "#163233" }}
+                  >
+                    Duration & Fees
+                  </h3>
+                  <div className="text-left text-gray-700 space-y-2">
+                    <div className="flex justify-between">
+                      <span>Duration:</span>
+                      <span>12 months</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Batch Size:</span>
+                      <span>50 students</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Fees:</span>
+                      <del className="font-bold">{course.cancelled_fee}</del>
+                      <span className="font-bold">{course.fees}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
+              <button
+                className="mt-8 px-8 py-3 rounded-lg font-medium text-lg transition-all hover:shadow-lg transform hover:scale-105"
+                style={{ backgroundColor: "#f9dc41", color: "#163233" }}
+              >
+                Enroll Now
+              </button>
             </div>
-          </div>
-          <button
-            className="mt-8 px-8 py-3 rounded-lg font-medium text-lg transition-all hover:shadow-lg transform hover:scale-105"
-            style={{ backgroundColor: "#f9dc41", color: "#163233" }}
-          >
-            Enroll Now
-          </button>
+          )}
         </div>
       </div>
     </div>
