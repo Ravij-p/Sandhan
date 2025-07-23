@@ -52,24 +52,19 @@ const App = () => {
 
             {isCoursesDropdownOpen && (
               <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border min-w-32 z-50">
-                {[
-                  "/ssc",
-                  "/neet",
-                  "/gpsc",
-                  "/upsc",
-                  "/talati",
-                  "/ethics  ",
-                ].map((path, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => navigate(path)}
-                    className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${
-                      idx === 0 ? "rounded-t-lg" : ""
-                    } ${idx === 3 ? "rounded-b-lg" : ""}`}
-                  >
-                    {path.slice(1).toUpperCase()}
-                  </button>
-                ))}
+                {["/ssc", "/neet", "/gpsc", "/upsc", "/talati", "/ethics"].map(
+                  (path, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => navigate(path)}
+                      className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${
+                        idx === 0 ? "rounded-t-lg" : ""
+                      } ${idx === 3 ? "rounded-b-lg" : ""}`}
+                    >
+                      {path.slice(1).toUpperCase()}
+                    </button>
+                  )
+                )}
               </div>
             )}
           </div>
@@ -301,6 +296,8 @@ const App = () => {
         return <CoursePage courseType="upsc" />;
       case "/talati":
         return <CoursePage courseType="talati" />;
+      case "/ethics":
+        return <CoursePage courseType="ethics" />;
       default:
         return <HomePage />;
     }
