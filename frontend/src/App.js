@@ -9,11 +9,13 @@ const Router = ({ children }) => children;
 const App = () => {
   const [currentRoute, setCurrentRoute] = useState("/");
   const [isCoursesDropdownOpen, setIsCoursesDropdownOpen] = useState(false);
+  const [isNeetSubmenuOpen, setIsNeetSubmenuOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = (path) => {
     setCurrentRoute(path);
     setIsCoursesDropdownOpen(false);
+    setIsNeetSubmenuOpen(false);
   };
   useEffect(() => {
     const interval = setInterval(() => {
@@ -33,11 +35,10 @@ const App = () => {
         <div className="hidden lg:flex items-center space-x-6">
           <button
             onClick={() => navigate("/")}
-            className={`px-3 py-2 rounded ${
-              currentRoute === "/"
-                ? "bg-gray-800 text-white"
-                : "text-gray-800 hover:bg-gray-200"
-            }`}
+            className={`px-3 py-2 rounded ${currentRoute === "/"
+              ? "bg-gray-800 text-white"
+              : "text-gray-800 hover:bg-gray-200"
+              }`}
           >
             Home
           </button>
@@ -52,41 +53,69 @@ const App = () => {
 
             {isCoursesDropdownOpen && (
               <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border min-w-32 z-50">
-                {["/ssc", "/neet", "/gpsc", "/upsc", "/talati", "/ethics"].map(
+                {["/ssc", "/gpsc", "/upsc", "/talati", "/ethics"].map(
                   (path, idx) => (
                     <button
                       key={idx}
                       onClick={() => navigate(path)}
-                      className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${
-                        idx === 0 ? "rounded-t-lg" : ""
-                      } ${idx === 3 ? "rounded-b-lg" : ""}`}
+                      className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${idx === 0 ? "rounded-t-lg" : ""
+                        } ${idx === 4 ? "rounded-b-lg" : ""}`}
                     >
                       {path.slice(1).toUpperCase()}
                     </button>
                   )
                 )}
+
+                {/* NEET with submenu */}
+                <div
+                  className="relative"
+                  onMouseEnter={() => setIsNeetSubmenuOpen(true)}
+                  onMouseLeave={() => setIsNeetSubmenuOpen(false)}
+                >
+                  <button
+                    className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 flex items-center justify-between"
+                  >
+                    <span>NEET</span>
+                    <ChevronRight size={16} />
+                  </button>
+
+                  {isNeetSubmenuOpen && (
+                    <div className="absolute left-full top-0 ml-1 bg-white rounded-lg shadow-lg border min-w-48 z-60">
+                      <button
+                        onClick={() => navigate("/neet-1year")}
+                        className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-t-lg"
+                      >
+                        NEET for Class 11
+                      </button>
+                      <button
+                        onClick={() => navigate("/neet-2year")}
+                        className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-b-lg"
+                      >
+                        NEET for Class 12
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
 
           <button
             onClick={() => navigate("/testSeries")}
-            className={`px-3 py-2 rounded ${
-              currentRoute === "/testSeries"
-                ? "bg-gray-800 text-white"
-                : "text-gray-800 hover:bg-gray-200"
-            }`}
+            className={`px-3 py-2 rounded ${currentRoute === "/testSeries"
+              ? "bg-gray-800 text-white"
+              : "text-gray-800 hover:bg-gray-200"
+              }`}
           >
             Test Series
           </button>
 
           <button
             onClick={() => navigate("/about")}
-            className={`px-3 py-2 rounded ${
-              currentRoute === "/about"
-                ? "bg-gray-800 text-white"
-                : "text-gray-800 hover:bg-gray-200"
-            }`}
+            className={`px-3 py-2 rounded ${currentRoute === "/about"
+              ? "bg-gray-800 text-white"
+              : "text-gray-800 hover:bg-gray-200"
+              }`}
           >
             About
           </button>
@@ -124,7 +153,7 @@ const App = () => {
 
             {isCoursesDropdownOpen && (
               <div className="flex flex-col pl-4 space-y-1">
-                {["/ssc", "/neet", "/gpsc", "/upsc", "/talati", "/ethics"].map(
+                {["/ssc", "/gpsc", "/upsc", "/talati", "/ethics"].map(
                   (path, idx) => (
                     <button
                       key={idx}
@@ -138,6 +167,40 @@ const App = () => {
                     </button>
                   )
                 )}
+
+                {/* NEET with submenu for mobile */}
+                <div>
+                  <button
+                    onClick={() => setIsNeetSubmenuOpen(!isNeetSubmenuOpen)}
+                    className="w-full text-left px-2 py-1 text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                  >
+                    <span>NEET</span>
+                    <ChevronDown size={14} />
+                  </button>
+
+                  {isNeetSubmenuOpen && (
+                    <div className="flex flex-col pl-4 space-y-1 mt-1">
+                      <button
+                        onClick={() => {
+                          navigate("/neet-1year");
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full text-left px-2 py-1 text-gray-600 hover:bg-gray-100 text-sm"
+                      >
+                        NEET One Year Program
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate("/neet-2year");
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full text-left px-2 py-1 text-gray-600 hover:bg-gray-100 text-sm"
+                      >
+                        NEET Two Year Program
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -192,13 +255,13 @@ const App = () => {
           <div className="relative max-w-4xl mx-auto">
             <button
               onClick={prevSlide}
-              className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-12 z-10 p-2 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+              className="absolute left-2 lg:-left-12 top-1/2 transform -translate-y-1/2 z-10 p-2 rounded-full shadow-lg hover:shadow-xl transition-shadow"
               style={{ backgroundColor: "#f9dc41" }}
             >
-              <ChevronLeft size={24} />
+              <ChevronLeft size={20} className="lg:w-6 lg:h-6" />
             </button>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mx-12 lg:mx-0">
               {getVisibleCards().map((card) => (
                 <div
                   key={card.id}
@@ -214,10 +277,10 @@ const App = () => {
 
             <button
               onClick={nextSlide}
-              className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-12 z-10 p-2 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+              className="absolute right-2 lg:-right-12 top-1/2 transform -translate-y-1/2 z-10 p-2 rounded-full shadow-lg hover:shadow-xl transition-shadow"
               style={{ backgroundColor: "#f9dc41" }}
             >
-              <ChevronRight size={24} />
+              <ChevronRight size={20} className="lg:w-6 lg:h-6" />
             </button>
           </div>
 
@@ -226,9 +289,8 @@ const App = () => {
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
-                className={`w-3 h-3 rounded-full transition-colors ${
-                  currentSlide === index ? "bg-yellow-400" : "bg-gray-300"
-                }`}
+                className={`w-3 h-3 rounded-full transition-colors ${currentSlide === index ? "bg-yellow-400" : "bg-gray-300"
+                  }`}
               />
             ))}
           </div>
@@ -288,8 +350,10 @@ const App = () => {
         return <TestSeriesPage />;
       case "/ssc":
         return <CoursePage courseType="ssc" />;
-      case "/neet":
-        return <CoursePage courseType="neet" />;
+      case "/neet11":
+        return <CoursePage courseType="neet11" />;
+      case "/neet12":
+        return <CoursePage courseType="neet12" />;
       case "/gpsc":
         return <CoursePage courseType="gpsc" />;
       case "/upsc":
