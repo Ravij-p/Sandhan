@@ -35,11 +35,10 @@ const App = () => {
         <div className="hidden lg:flex items-center space-x-6">
           <button
             onClick={() => navigate("/")}
-            className={`px-3 py-2 rounded ${
-              currentRoute === "/"
+            className={`px-3 py-2 rounded ${currentRoute === "/"
                 ? "bg-gray-800 text-white"
                 : "text-gray-800 hover:bg-gray-200"
-            }`}
+              }`}
           >
             Home
           </button>
@@ -59,9 +58,8 @@ const App = () => {
                     <button
                       key={idx}
                       onClick={() => navigate(path)}
-                      className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${
-                        idx === 0 ? "rounded-t-lg" : ""
-                      } ${idx === 4 ? "rounded-b-lg" : ""}`}
+                      className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${idx === 0 ? "rounded-t-lg" : ""
+                        } ${idx === 4 ? "rounded-b-lg" : ""}`}
                     >
                       {path.slice(1).toUpperCase()}
                     </button>
@@ -85,13 +83,13 @@ const App = () => {
                         onClick={() => navigate("/neet11")}
                         className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-t-lg"
                       >
-                        NEET for Class 11
+                        NEET Class 11 Program
                       </button>
                       <button
                         onClick={() => navigate("/neet12")}
                         className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-b-lg"
                       >
-                        NEET for Class 12
+                        NEET Class 12 Program
                       </button>
                     </div>
                   )}
@@ -102,22 +100,20 @@ const App = () => {
 
           <button
             onClick={() => navigate("/testSeries")}
-            className={`px-3 py-2 rounded ${
-              currentRoute === "/testSeries"
+            className={`px-3 py-2 rounded ${currentRoute === "/testSeries"
                 ? "bg-gray-800 text-white"
                 : "text-gray-800 hover:bg-gray-200"
-            }`}
+              }`}
           >
             Test Series
           </button>
 
           <button
             onClick={() => navigate("/about")}
-            className={`px-3 py-2 rounded ${
-              currentRoute === "/about"
+            className={`px-3 py-2 rounded ${currentRoute === "/about"
                 ? "bg-gray-800 text-white"
                 : "text-gray-800 hover:bg-gray-200"
-            }`}
+              }`}
           >
             About
           </button>
@@ -184,21 +180,21 @@ const App = () => {
                     <div className="flex flex-col pl-4 space-y-1 mt-1">
                       <button
                         onClick={() => {
-                          navigate("/neet-1year");
+                          navigate("/neet11");
                           setIsMobileMenuOpen(false);
                         }}
                         className="w-full text-left px-2 py-1 text-gray-600 hover:bg-gray-100 text-sm"
                       >
-                        NEET One Year Program
+                        NEET Class 11 Program
                       </button>
                       <button
                         onClick={() => {
-                          navigate("/neet-2year");
+                          navigate("/neet12");
                           setIsMobileMenuOpen(false);
                         }}
                         className="w-full text-left px-2 py-1 text-gray-600 hover:bg-gray-100 text-sm"
                       >
-                        NEET Two Year Program
+                        NEET Class 12 Program
                       </button>
                     </div>
                   )}
@@ -291,9 +287,8 @@ const App = () => {
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
-                className={`w-3 h-3 rounded-full transition-colors ${
-                  currentSlide === index ? "bg-yellow-400" : "bg-gray-300"
-                }`}
+                className={`w-3 h-3 rounded-full transition-colors ${currentSlide === index ? "bg-yellow-400" : "bg-gray-300"
+                  }`}
               />
             ))}
           </div>
