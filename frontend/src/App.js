@@ -35,10 +35,11 @@ const App = () => {
         <div className="hidden lg:flex items-center space-x-6">
           <button
             onClick={() => navigate("/")}
-            className={`px-3 py-2 rounded ${currentRoute === "/"
-              ? "bg-gray-800 text-white"
-              : "text-gray-800 hover:bg-gray-200"
-              }`}
+            className={`px-3 py-2 rounded ${
+              currentRoute === "/"
+                ? "bg-gray-800 text-white"
+                : "text-gray-800 hover:bg-gray-200"
+            }`}
           >
             Home
           </button>
@@ -58,8 +59,9 @@ const App = () => {
                     <button
                       key={idx}
                       onClick={() => navigate(path)}
-                      className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${idx === 0 ? "rounded-t-lg" : ""
-                        } ${idx === 4 ? "rounded-b-lg" : ""}`}
+                      className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${
+                        idx === 0 ? "rounded-t-lg" : ""
+                      } ${idx === 4 ? "rounded-b-lg" : ""}`}
                     >
                       {path.slice(1).toUpperCase()}
                     </button>
@@ -72,9 +74,7 @@ const App = () => {
                   onMouseEnter={() => setIsNeetSubmenuOpen(true)}
                   onMouseLeave={() => setIsNeetSubmenuOpen(false)}
                 >
-                  <button
-                    className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 flex items-center justify-between"
-                  >
+                  <button className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 flex items-center justify-between">
                     <span>NEET</span>
                     <ChevronRight size={16} />
                   </button>
@@ -82,13 +82,13 @@ const App = () => {
                   {isNeetSubmenuOpen && (
                     <div className="absolute left-full top-0 ml-1 bg-white rounded-lg shadow-lg border min-w-48 z-60">
                       <button
-                        onClick={() => navigate("/neet-1year")}
+                        onClick={() => navigate("/neet11")}
                         className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-t-lg"
                       >
                         NEET for Class 11
                       </button>
                       <button
-                        onClick={() => navigate("/neet-2year")}
+                        onClick={() => navigate("/neet12")}
                         className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-b-lg"
                       >
                         NEET for Class 12
@@ -102,20 +102,22 @@ const App = () => {
 
           <button
             onClick={() => navigate("/testSeries")}
-            className={`px-3 py-2 rounded ${currentRoute === "/testSeries"
-              ? "bg-gray-800 text-white"
-              : "text-gray-800 hover:bg-gray-200"
-              }`}
+            className={`px-3 py-2 rounded ${
+              currentRoute === "/testSeries"
+                ? "bg-gray-800 text-white"
+                : "text-gray-800 hover:bg-gray-200"
+            }`}
           >
             Test Series
           </button>
 
           <button
             onClick={() => navigate("/about")}
-            className={`px-3 py-2 rounded ${currentRoute === "/about"
-              ? "bg-gray-800 text-white"
-              : "text-gray-800 hover:bg-gray-200"
-              }`}
+            className={`px-3 py-2 rounded ${
+              currentRoute === "/about"
+                ? "bg-gray-800 text-white"
+                : "text-gray-800 hover:bg-gray-200"
+            }`}
           >
             About
           </button>
@@ -289,8 +291,9 @@ const App = () => {
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
-                className={`w-3 h-3 rounded-full transition-colors ${currentSlide === index ? "bg-yellow-400" : "bg-gray-300"
-                  }`}
+                className={`w-3 h-3 rounded-full transition-colors ${
+                  currentSlide === index ? "bg-yellow-400" : "bg-gray-300"
+                }`}
               />
             ))}
           </div>

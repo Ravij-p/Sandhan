@@ -31,6 +31,18 @@ const CoursePage = ({ courseType }) => {
       fees: "₹9,999",
       cancelled_fee: "₹15,000",
     },
+    neet12: {
+      title: "NEET Coaching for Class 12",
+      description: "National Eligibility cum Entrance Test for medical courses",
+      fees: "₹55,000",
+      cancelled_fee: "₹65,000",
+    },
+    neet11: {
+      title: "NEET Coaching for Class 11",
+      description: "National Eligibility cum Entrance Test for medical courses",
+      fees: "₹70,000",
+      cancelled_fee: "₹85,000",
+    },
     upsc: {
       title: "UPSC Exam Prelims + Mains",
       description: "Coming soon",
