@@ -8,10 +8,10 @@ const CoursePage = ({ courseType }) => {
       cancelled_fee: "₹21,000",
     },
     neet: {
-      title: "NEET Coaching",
+      title: "NEET Coaching for Class 12",
       description: "National Eligibility cum Entrance Test for medical courses",
-      fees: "₹18,500",
-      cancelled_fee: "₹21,000",
+      fees: "₹55,000",
+      cancelled_fee: "₹65,000",
     },
     gpsc: {
       title: "GPSC Class 1-2",
@@ -25,7 +25,7 @@ const CoursePage = ({ courseType }) => {
       fees: "₹12,000",
       cancelled_fee: "₹20,000",
     },
-    ethicsAndEssay: {
+    ethics: {
       title: "Ethics and Essay for GPSC Class 1-2 Exam",
       description: "Ethics and Essay for GPSC Class 1-2 Exam",
       fees: "₹9,999",

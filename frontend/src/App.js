@@ -129,25 +129,20 @@ const App = () => {
 
             {isCoursesDropdownOpen && (
               <div className="flex flex-col pl-4 space-y-1">
-                {[
-                  "/ssc",
-                  "/neet",
-                  "/gpsc",
-                  "/upsc",
-                  "/talati",
-                  "ethicsandessay",
-                ].map((path, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      navigate(path);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="w-full text-left px-2 py-1 text-gray-700 hover:bg-gray-100"
-                  >
-                    {path.slice(1).toUpperCase()}
-                  </button>
-                ))}
+                {["/ssc", "/neet", "/gpsc", "/upsc", "/talati", "/ethics"].map(
+                  (path, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        navigate(path);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full text-left px-2 py-1 text-gray-700 hover:bg-gray-100"
+                    >
+                      {path.slice(1).toUpperCase()}
+                    </button>
+                  )
+                )}
               </div>
             )}
           </div>
