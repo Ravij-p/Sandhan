@@ -3,13 +3,7 @@ import { ChevronLeft, ChevronRight, ChevronDown, Menu } from "lucide-react";
 import CoursePage from "./components/coursePages";
 import Header from "./components/Header";
 import { sliderCards, courseCards } from "./slides/sliderCards";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  useNavigate,
-  NavLink,
-} from "react-router-dom";
+import { Routes, Route, useNavigate, NavLink } from "react-router-dom";
 import { AboutPage } from "./components/aboutPage";
 import { TestSeriesPage } from "./components/testSeriesPage";
 import RefundPolicy from "./components/PolicyPages/refundPolicy";
@@ -17,7 +11,6 @@ import PrivacyPolicy from "./components/PolicyPages/privacyPolicy";
 import TermsAndConditions from "./components/PolicyPages/TermsAndConditions";
 import ContactPage from "./components/PolicyPages/ContactPage";
 const App = () => {
-  const [currentRoute, setCurrentRoute] = useState("/");
   const [isCoursesDropdownOpen, setIsCoursesDropdownOpen] = useState(false);
   const [isNeetSubmenuOpen, setIsNeetSubmenuOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -387,9 +380,9 @@ const App = () => {
         <Route path="/upsc" element={<CoursePage courseType="upsc" />} />
         <Route path="/talati" element={<CoursePage courseType="talati" />} />
         <Route path="/ethics" element={<CoursePage courseType="ethics" />} />
-        <Route path="/refund-policy" element={<RefundPolicy />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/terms-and-condition" element={<TermsAndConditions />} />
+        <Route path="/refundPolicy" element={<RefundPolicy />} />
+        <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
+        <Route path="/termsAndCondition" element={<TermsAndConditions />} />
         <Route path="/contact" element={<ContactPage />} />
       </Routes>
     </div>
