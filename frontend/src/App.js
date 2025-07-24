@@ -10,7 +10,9 @@ import RefundPolicy from "./components/PolicyPages/refundPolicy";
 import PrivacyPolicy from "./components/PolicyPages/privacyPolicy";
 import TermsAndConditions from "./components/PolicyPages/TermsAndConditions";
 import ContactPage from "./components/PolicyPages/ContactPage";
-import { ShippingPage } from "./components/PolicyPages/shippingPage";
+import ShippingPolicy, {
+  ShippingPage,
+} from "./components/PolicyPages/shippingPage";
 const App = () => {
   const [isCoursesDropdownOpen, setIsCoursesDropdownOpen] = useState(false);
   const [isNeetSubmenuOpen, setIsNeetSubmenuOpen] = useState(false);
@@ -385,7 +387,7 @@ const App = () => {
         <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
         <Route path="/termsAndCondition" element={<TermsAndConditions />} />
         <Route path="/contact" element={<ContactPage />} />
-        <Route path="/shipping" element={<ShippingPage />} />
+        <Route path="/shipping" element={<ShippingPolicy />} />
       </Routes>
     </div>
   );
