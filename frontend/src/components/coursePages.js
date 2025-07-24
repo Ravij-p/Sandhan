@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import axios from "axios";
 const CoursePage = ({ courseType }) => {
   const [showEnrollmentForm, setShowEnrollmentForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -64,13 +64,7 @@ const CoursePage = ({ courseType }) => {
 
   const course = courseData[courseType] || courseData.ssc;
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  const API = process.env.REACT_APP_API_BASE_URL;
 
   const handleSendOTP = async () => {
     if (!formData.phoneNumber || formData.phoneNumber.length !== 10) {
@@ -78,12 +72,18 @@ const CoursePage = ({ courseType }) => {
       return;
     }
 
-    // Simulate OTP sending
     setIsVerifying(true);
-    setTimeout(() => {
+    try {
+      const res = await axios.post(`${API}/send-otp`, {
+        mobile: formData.phoneNumber,
+      });
+      alert("OTP sent successfully");
       setOtpSent(true);
+    } catch (err) {
+      alert("Failed to send OTP");
+    } finally {
       setIsVerifying(false);
-    }, 1000);
+    }
   };
 
   const handleVerifyOTP = async () => {
@@ -92,37 +92,86 @@ const CoursePage = ({ courseType }) => {
       return;
     }
 
-    // Simulate OTP verification
     setIsVerifying(true);
-    setTimeout(() => {
+    try {
+      const res = await axios.post(`${API}/verify-otp`, {
+        mobile: formData.phoneNumber,
+        otp,
+      });
+
       setIsVerified(true);
+      alert("OTP verified successfully");
+    } catch (err) {
+      alert("Invalid OTP");
+    } finally {
       setIsVerifying(false);
-    }, 1000);
+    }
+  };
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
   };
 
-  const handleSubmitEnrollment = () => {
-    if (!formData.firstName || !formData.surname || !isVerified) {
+  const handleSubmitEnrollment = async () => {
+    const { firstName, surname, phoneNumber } = formData;
+
+    if (!firstName || !surname || !isVerified) {
       alert("Please fill all fields and verify your phone number");
       return;
     }
 
-    // Here you would typically send the enrollment data to your backend
-    const enrollmentData = {
-      ...formData,
-      courseType,
-      courseTitle: course.title,
-      courseFees: course.fees,
-    };
+    try {
+      const res = await axios.post(`${API}/register`, {
+        name: firstName,
+        surname,
+        mobile: phoneNumber,
+        password: "testpass123", // You can change logic or generate randomly
+      });
 
-    console.log("Enrollment Data:", enrollmentData);
-    alert("Enrollment successful! We will contact you soon.");
+      const { username } = res.data;
+      console.log("User registered with username:", username);
 
-    // Reset form
-    setShowEnrollmentForm(false);
-    setFormData({ firstName: "", surname: "", phoneNumber: "" });
-    setOtpSent(false);
-    setOtp("");
-    setIsVerified(false);
+      // Now trigger Razorpay Payment
+      const order = await axios.post(`${API}/create-order`, {
+        amount: 1000,
+      });
+
+      const options = {
+        key: process.env.REACT_APP_RAZORPAY_KEY,
+        amount: order.data.amount,
+        currency: "INR",
+        name: "Sandhan Academy",
+        description: "Course Enrollment",
+        order_id: order.data.id,
+        handler: async function (response) {
+          // Payment success
+          await axios.post(`${API}/payment-success`, {
+            userId: username,
+            amount: 1000,
+            paymentId: response.razorpay_payment_id,
+            receiptUrl: order.data.receipt,
+          });
+
+          alert("Payment successful! Receipt will be sent.");
+        },
+        prefill: {
+          name: `${firstName} ${surname}`,
+          contact: phoneNumber,
+        },
+        theme: {
+          color: "#163233",
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      console.error(err);
+      alert("Registration or payment failed");
+    }
   };
 
   return (
@@ -169,8 +218,12 @@ const CoursePage = ({ courseType }) => {
                     <div className="flex justify-between">
                       <span>Fees:</span>
                       <div>
-                        <del className="font-bold text-red-500 mr-2">{course.cancelled_fee}</del>
-                        <span className="font-bold text-green-600">{course.fees}</span>
+                        <del className="font-bold text-red-500 mr-2">
+                          {course.cancelled_fee}
+                        </del>
+                        <span className="font-bold text-green-600">
+                          {course.fees}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -206,10 +259,15 @@ const CoursePage = ({ courseType }) => {
               </div>
 
               <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-semibold text-sm text-gray-600 mb-2">Course Details:</h3>
+                <h3 className="font-semibold text-sm text-gray-600 mb-2">
+                  Course Details:
+                </h3>
                 <p className="text-sm text-gray-700">{course.description}</p>
                 <p className="text-sm text-gray-700 mt-1">
-                  Fees: <span className="font-bold text-green-600">{course.fees}</span>
+                  Fees:{" "}
+                  <span className="font-bold text-green-600">
+                    {course.fees}
+                  </span>
                 </p>
               </div>
 
@@ -264,7 +322,11 @@ const CoursePage = ({ courseType }) => {
                       disabled={otpSent || isVerifying}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >
-                      {isVerifying ? "Sending..." : otpSent ? "Sent" : "Send OTP"}
+                      {isVerifying
+                        ? "Sending..."
+                        : otpSent
+                        ? "Sent"
+                        : "Send OTP"}
                     </button>
                   </div>
                 </div>
@@ -312,11 +374,19 @@ const CoursePage = ({ courseType }) => {
                   </button>
                   <button
                     onClick={handleSubmitEnrollment}
-                    disabled={!isVerified || !formData.firstName || !formData.surname}
+                    disabled={
+                      !isVerified || !formData.firstName || !formData.surname
+                    }
                     className="flex-1 px-4 py-2 rounded-lg font-medium text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
                     style={{
-                      backgroundColor: isVerified && formData.firstName && formData.surname ? "#f9dc41" : "#9ca3af",
-                      color: isVerified && formData.firstName && formData.surname ? "#163233" : "#ffffff"
+                      backgroundColor:
+                        isVerified && formData.firstName && formData.surname
+                          ? "#f9dc41"
+                          : "#9ca3af",
+                      color:
+                        isVerified && formData.firstName && formData.surname
+                          ? "#163233"
+                          : "#ffffff",
                     }}
                   >
                     Complete Enrollment
