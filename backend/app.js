@@ -7,21 +7,21 @@ const Payment = require("./models/Payment");
 const Otp = require("./models/OTP");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
-
+require("dotenv").config();
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
 // MongoDB Connection
-mongoose.connect("mongodb://localhost:27017/institute", {
+mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
 
 // Razorpay Instance
 const razorpay = new Razorpay({
-  key_id: "YOUR_KEY_ID",
-  key_secret: "YOUR_KEY_SECRET",
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_SECRET,
 });
 
 // User Registration
@@ -43,17 +43,40 @@ app.post("/register", async (req, res) => {
 });
 
 // Send OTP (mock)
+const axios = require("axios");
+
 app.post("/send-otp", async (req, res) => {
   const { mobile } = req.body;
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-  // Save OTP
-  await Otp.deleteMany({ mobile }); // clean old
-  await new Otp({ mobile, otp }).save();
+  try {
+    // Save OTP
+    await Otp.deleteMany({ mobile });
+    await new Otp({ mobile, otp }).save();
 
-  console.log(`OTP for ${mobile}: ${otp}`);
-  res.json({ message: "OTP sent (mock)" });
+    const response = await axios.post(
+      "https://www.fast2sms.com/dev/bulkV2",
+      {
+        variables_values: otp,
+        route: "otp",
+        numbers: mobile,
+      },
+      {
+        headers: {
+          authorization: process.env.FAST2SMS_API_KEY,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log(`Sent OTP to ${mobile}: ${otp}`);
+    res.json({ message: "OTP sent" });
+  } catch (error) {
+    console.log("SMS error:", error.response?.data || error.message);
+    res.status(500).json({ error: "Failed to send OTP" });
+  }
 });
+
 app.post("/verify-otp", async (req, res) => {
   const { mobile, otp } = req.body;
 
@@ -61,7 +84,7 @@ app.post("/verify-otp", async (req, res) => {
   if (!record) return res.status(400).json({ error: "Invalid OTP" });
 
   await User.updateOne({ mobile }, { $set: { isVerified: true } });
-  await Otp.deleteMany({ mobile }); // clear OTP after verification
+  await Otp.deleteMany({ mobile });
 
   res.json({ message: "Mobile verified" });
 });
