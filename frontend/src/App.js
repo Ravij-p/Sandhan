@@ -3,20 +3,26 @@ import { ChevronLeft, ChevronRight, ChevronDown, Menu } from "lucide-react";
 import CoursePage from "./components/coursePages";
 import Header from "./components/Header";
 import { sliderCards, courseCards } from "./slides/sliderCards";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useNavigate,
+  NavLink,
+} from "react-router-dom";
 import { AboutPage } from "./components/aboutPage";
 import { TestSeriesPage } from "./components/testSeriesPage";
-const Router = ({ children }) => children;
+import RefundPolicy from "./components/PolicyPages/refundPolicy";
+import PrivacyPolicy from "./components/PolicyPages/privacyPolicy";
+import TermsAndConditions from "./components/PolicyPages/TermsAndConditions";
+import ContactPage from "./components/PolicyPages/ContactPage";
 const App = () => {
   const [currentRoute, setCurrentRoute] = useState("/");
   const [isCoursesDropdownOpen, setIsCoursesDropdownOpen] = useState(false);
   const [isNeetSubmenuOpen, setIsNeetSubmenuOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const navigate = (path) => {
-    setCurrentRoute(path);
-    setIsCoursesDropdownOpen(false);
-    setIsNeetSubmenuOpen(false);
-  };
+  const navigate = useNavigate();
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % 8);
@@ -33,15 +39,18 @@ const App = () => {
           </h1>
         </div>
         <div className="hidden lg:flex items-center space-x-6">
-          <button
-            onClick={() => navigate("/")}
-            className={`px-3 py-2 rounded ${currentRoute === "/"
-                ? "bg-gray-800 text-white"
-                : "text-gray-800 hover:bg-gray-200"
-              }`}
+          <NavLink
+            to="/"
+            className={({ isActive }) =>
+              `px-3 py-2 rounded ${
+                isActive
+                  ? "bg-gray-800 text-white"
+                  : "text-gray-800 hover:bg-gray-200"
+              }`
+            }
           >
             Home
-          </button>
+          </NavLink>
           <div className="relative">
             <button
               onClick={() => setIsCoursesDropdownOpen(!isCoursesDropdownOpen)}
@@ -57,9 +66,13 @@ const App = () => {
                   (path, idx) => (
                     <button
                       key={idx}
-                      onClick={() => navigate(path)}
-                      className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${idx === 0 ? "rounded-t-lg" : ""
-                        } ${idx === 4 ? "rounded-b-lg" : ""}`}
+                      onClick={() => {
+                        navigate(path);
+                        setIsCoursesDropdownOpen(false);
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${
+                        idx === 0 ? "rounded-t-lg" : ""
+                      } ${idx === 4 ? "rounded-b-lg" : ""}`}
                     >
                       {path.slice(1).toUpperCase()}
                     </button>
@@ -80,13 +93,21 @@ const App = () => {
                   {isNeetSubmenuOpen && (
                     <div className="absolute left-full top-0 ml-1 bg-white rounded-lg shadow-lg border min-w-48 z-60">
                       <button
-                        onClick={() => navigate("/neet11")}
+                        onClick={() => {
+                          navigate("/neet11");
+                          setIsNeetSubmenuOpen(false);
+                          setIsCoursesDropdownOpen(false);
+                        }}
                         className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-t-lg"
                       >
                         NEET Class 11 Program
                       </button>
                       <button
-                        onClick={() => navigate("/neet12")}
+                        onClick={() => {
+                          navigate("/neet12");
+                          setIsNeetSubmenuOpen(false);
+                          setIsCoursesDropdownOpen(false);
+                        }}
                         className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-b-lg"
                       >
                         NEET Class 12 Program
@@ -98,25 +119,31 @@ const App = () => {
             )}
           </div>
 
-          <button
-            onClick={() => navigate("/testSeries")}
-            className={`px-3 py-2 rounded ${currentRoute === "/testSeries"
-                ? "bg-gray-800 text-white"
-                : "text-gray-800 hover:bg-gray-200"
-              }`}
+          <NavLink
+            to="/testSeries"
+            className={({ isActive }) =>
+              `px-3 py-2 rounded ${
+                isActive
+                  ? "bg-gray-800 text-white"
+                  : "text-gray-800 hover:bg-gray-200"
+              }`
+            }
           >
             Test Series
-          </button>
+          </NavLink>
 
-          <button
-            onClick={() => navigate("/about")}
-            className={`px-3 py-2 rounded ${currentRoute === "/about"
-                ? "bg-gray-800 text-white"
-                : "text-gray-800 hover:bg-gray-200"
-              }`}
+          <NavLink
+            to="/about"
+            className={({ isActive }) =>
+              `px-3 py-2 rounded ${
+                isActive
+                  ? "bg-gray-800 text-white"
+                  : "text-gray-800 hover:bg-gray-200"
+              }`
+            }
           >
             About
-          </button>
+          </NavLink>
         </div>
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -138,7 +165,6 @@ const App = () => {
           >
             Home
           </button>
-
           {/* Courses Mobile */}
           <div className="px-2">
             <button
@@ -203,25 +229,31 @@ const App = () => {
             )}
           </div>
 
-          <button
-            onClick={() => {
-              navigate("/testSeries");
-              setIsMobileMenuOpen(false);
-            }}
-            className="w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-200"
-          >
-            Test Series
-          </button>
-
-          <button
-            onClick={() => {
-              navigate("/about");
-              setIsMobileMenuOpen(false);
-            }}
-            className="w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-200"
+          <NavLink
+            to="/testSeries"
+            className={({ isActive }) =>
+              `px-3 py-2 rounded ${
+                isActive
+                  ? "bg-gray-800 text-white"
+                  : "text-gray-800 hover:bg-gray-200"
+              }`
+            }
+            onClick={() => setIsMobileMenuOpen(false)}
           >
             About
-          </button>
+          </NavLink>
+          <NavLink
+            to="/about"
+            className={({ isActive }) =>
+              `px-3 py-2 rounded ${
+                isActive
+                  ? "bg-gray-800 text-white"
+                  : "text-gray-800 hover:bg-gray-200"
+              }`
+            }
+          >
+            About
+          </NavLink>
         </div>
       )}
     </nav>
@@ -287,8 +319,9 @@ const App = () => {
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
-                className={`w-3 h-3 rounded-full transition-colors ${currentSlide === index ? "bg-yellow-400" : "bg-gray-300"
-                  }`}
+                className={`w-3 h-3 rounded-full transition-colors ${
+                  currentSlide === index ? "bg-yellow-400" : "bg-gray-300"
+                }`}
               />
             ))}
           </div>
@@ -338,41 +371,28 @@ const App = () => {
       <StaticCourseCards />
     </div>
   );
-  const renderCurrentRoute = () => {
-    switch (currentRoute) {
-      case "/":
-        return <HomePage />;
-      case "/about":
-        return <AboutPage />;
-      case "/testSeries":
-        return <TestSeriesPage />;
-      case "/ssc":
-        return <CoursePage courseType="ssc" />;
-      case "/neet11":
-        return <CoursePage courseType="neet11" />;
-      case "/neet12":
-        return <CoursePage courseType="neet12" />;
-      case "/gpsc":
-        return <CoursePage courseType="gpsc" />;
-      case "/upsc":
-        return <CoursePage courseType="upsc" />;
-      case "/talati":
-        return <CoursePage courseType="talati" />;
-      case "/ethics":
-        return <CoursePage courseType="ethics" />;
-      default:
-        return <HomePage />;
-    }
-  };
 
   return (
-    <Router>
-      <div className="min-h-screen">
-        <Header />
-        <Navigation />
-        {renderCurrentRoute()}
-      </div>
-    </Router>
+    <div className="min-h-screen">
+      <Header />
+      <Navigation />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/testSeries" element={<TestSeriesPage />} />
+        <Route path="/ssc" element={<CoursePage courseType="ssc" />} />
+        <Route path="/neet11" element={<CoursePage courseType="neet11" />} />
+        <Route path="/neet12" element={<CoursePage courseType="neet12" />} />
+        <Route path="/gpsc" element={<CoursePage courseType="gpsc" />} />
+        <Route path="/upsc" element={<CoursePage courseType="upsc" />} />
+        <Route path="/talati" element={<CoursePage courseType="talati" />} />
+        <Route path="/ethics" element={<CoursePage courseType="ethics" />} />
+        <Route path="/refund-policy" element={<RefundPolicy />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-and-condition" element={<TermsAndConditions />} />
+        <Route path="/contact" element={<ContactPage />} />
+      </Routes>
+    </div>
   );
 };
 
