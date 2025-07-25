@@ -74,9 +74,12 @@ const CoursePage = ({ courseType }) => {
 
     setIsVerifying(true);
     try {
-      const res = await axios.post(`${API}/send-otp`, {
-        mobile: formData.phoneNumber,
+      await fetch("http://localhost:5000/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile: formData.phoneNumber }),
       });
+
       alert("OTP sent successfully");
       setOtpSent(true);
     } catch (err) {

@@ -236,7 +236,7 @@ const App = () => {
             }
             onClick={() => setIsMobileMenuOpen(false)}
           >
-            About
+            Test Series
           </NavLink>
           <NavLink
             to="/about"
