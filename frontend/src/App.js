@@ -18,6 +18,7 @@ const App = () => {
   const [isNeetSubmenuOpen, setIsNeetSubmenuOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showAd, setShowAd] = useState(true);
   const navigate = useNavigate();
   useEffect(() => {
     const interval = setInterval(() => {
@@ -25,6 +26,17 @@ const App = () => {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+  useEffect(() => {
+    // Optional: Uncomment below if you want ad only once per visit
+    const adShown = sessionStorage.getItem("adShown");
+    if (!adShown) {
+      setShowAd(true);
+      sessionStorage.setItem("adShown", "true");
+    }
+  }, []);
+  const closeAd = () => {
+    setShowAd(false);
+  };
   const Navigation = () => (
     <nav className="fixed top-0 left-0 right-0 z-40 bg-[#f9dc41] shadow-md px-4 mt-20 sm:mt-14 lg:mt-8">
       <div className="container mx-auto flex items-center justify-between py-3">
@@ -363,6 +375,26 @@ const App = () => {
 
   const HomePage = () => (
     <div className="pt-40 lg:pt-20">
+      {showAd && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="relative bg-white rounded-lg shadow-lg p-0 max-w-md w-full">
+            {/* Close Button */}
+            <button
+              className="absolute top-2 right-2 text-white bg-red-500 rounded-full w-8 h-8 text-center text-xl"
+              onClick={closeAd}
+            >
+              &times;
+            </button>
+
+            {/* Ad Image */}
+            <img
+              src="/Advertisement.jpg" // Replace with your path
+              alt="Advertisement"
+              className="w-full rounded-b-lg object-contain"
+            />
+          </div>
+        </div>
+      )}
       <CardSlider />
       <StaticCourseCards />
     </div>

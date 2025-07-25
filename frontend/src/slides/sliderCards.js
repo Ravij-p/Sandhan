@@ -33,9 +33,9 @@ export const sliderCards = [
 export const courseCards = [
   {
     id: 1,
-    title: "NEET Coaching",
+    title: "NEET  12",
     description: "Medical entrance exam preparation with top faculty",
-    route: "/neet",
+    route: "/neet12",
     color: "bg-green-100",
   },
   {
@@ -66,6 +66,13 @@ export const courseCards = [
     description: "Interactive online classes with doubt clearing sessions",
     route: "/about",
     color: "bg-indigo-100",
+  },
+  {
+    id: 6,
+    title: "NEET  11",
+    description: "Medical entrance exam preparation with top faculty",
+    route: "/neet11",
+    color: "bg-green-100",
   },
 ];
 export const testSeriesCards = [
