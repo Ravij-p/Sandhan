@@ -422,9 +422,9 @@ const App = () => {
         <Route path="/shipping" element={<ShippingPolicy />} />
       </Routes>
       <footer className="bg-gray-800 text-white py-4 text-center mt-8">
-        <a href="/privacy-policy">Privacy Policy</a> |
-        <a href="/terms-and-conditions">Terms & Conditions</a> |
-        <a href="/refund-policy">Refund Policy</a>
+        <a href="/privacyPolicy">Privacy Policy</a> |
+        <a href="/termsAndCondition">Terms & Conditions</a> |
+        <a href="/refundPolicy">Refund Policy</a>
       </footer>
     </div>
   );

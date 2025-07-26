@@ -1,7 +1,7 @@
 import React from "react";
 
 const RefundPolicy = () => (
-  <div className="p-6 max-w-4xl mx-auto">
+  <div className="p-60 max-w-4xl mx-auto">
     <h1 className="text-3xl font-bold mb-4">Refund & Cancellation Policy</h1>
     <p>Effective Date: July 26, 2025</p>
 
