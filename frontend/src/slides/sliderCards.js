@@ -62,9 +62,9 @@ export const courseCards = [
   },
   {
     id: 5,
-    title: "Online Classes",
-    description: "Interactive online classes with doubt clearing sessions",
-    route: "/about",
+    title: "Talati Mains Preparation",
+    description: "Talati Mains exam coaching with expert guidance",
+    route: "/talati",
     color: "bg-indigo-100",
   },
   {
