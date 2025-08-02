@@ -70,59 +70,20 @@ const App = () => {
 
             {isCoursesDropdownOpen && (
               <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border min-w-32 z-50">
-                {["/ssc", "/gpsc", "/upsc", "/talati", "/ethics"].map(
-                  (path, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        navigate(path);
-                        setIsCoursesDropdownOpen(false);
-                      }}
-                      className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${
-                        idx === 0 ? "rounded-t-lg" : ""
-                      } ${idx === 4 ? "rounded-b-lg" : ""}`}
-                    >
-                      {path.slice(1).toUpperCase()}
-                    </button>
-                  )
-                )}
-
-                {/* NEET with submenu */}
-                <div
-                  className="relative"
-                  onMouseEnter={() => setIsNeetSubmenuOpen(true)}
-                  onMouseLeave={() => setIsNeetSubmenuOpen(false)}
-                >
-                  <button className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 flex items-center justify-between">
-                    <span>NEET</span>
-                    <ChevronRight size={16} />
+                {["/gpsc", "/upsc"].map((path, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      navigate(path);
+                      setIsCoursesDropdownOpen(false);
+                    }}
+                    className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${
+                      idx === 0 ? "rounded-t-lg" : ""
+                    } ${idx === 4 ? "rounded-b-lg" : ""}`}
+                  >
+                    {path.slice(1).toUpperCase()}
                   </button>
-
-                  {isNeetSubmenuOpen && (
-                    <div className="absolute left-full top-0 ml-1 bg-white rounded-lg shadow-lg border min-w-48 z-60">
-                      <button
-                        onClick={() => {
-                          navigate("/neet11");
-                          setIsNeetSubmenuOpen(false);
-                          setIsCoursesDropdownOpen(false);
-                        }}
-                        className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-t-lg"
-                      >
-                        NEET Class 11 Program
-                      </button>
-                      <button
-                        onClick={() => {
-                          navigate("/neet12");
-                          setIsNeetSubmenuOpen(false);
-                          setIsCoursesDropdownOpen(false);
-                        }}
-                        className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-b-lg"
-                      >
-                        NEET Class 12 Program
-                      </button>
-                    </div>
-                  )}
-                </div>
+                ))}
               </div>
             )}
           </div>
@@ -185,54 +146,18 @@ const App = () => {
 
             {isCoursesDropdownOpen && (
               <div className="flex flex-col pl-4 space-y-1">
-                {["/ssc", "/gpsc", "/upsc", "/talati", "/ethics"].map(
-                  (path, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        navigate(path);
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className="w-full text-left px-2 py-1 text-gray-700 hover:bg-gray-100"
-                    >
-                      {path.slice(1).toUpperCase()}
-                    </button>
-                  )
-                )}
-
-                {/* NEET with submenu for mobile */}
-                <div>
+                {["/gpsc", "/upsc"].map((path, idx) => (
                   <button
-                    onClick={() => setIsNeetSubmenuOpen(!isNeetSubmenuOpen)}
-                    className="w-full text-left px-2 py-1 text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                    key={idx}
+                    onClick={() => {
+                      navigate(path);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left px-2 py-1 text-gray-700 hover:bg-gray-100"
                   >
-                    <span>NEET</span>
-                    <ChevronDown size={14} />
+                    {path.slice(1).toUpperCase()}
                   </button>
-
-                  {isNeetSubmenuOpen && (
-                    <div className="flex flex-col pl-4 space-y-1 mt-1">
-                      <button
-                        onClick={() => {
-                          navigate("/neet11");
-                          setIsMobileMenuOpen(false);
-                        }}
-                        className="w-full text-left px-2 py-1 text-gray-600 hover:bg-gray-100 text-sm"
-                      >
-                        NEET Class 11 Program
-                      </button>
-                      <button
-                        onClick={() => {
-                          navigate("/neet12");
-                          setIsMobileMenuOpen(false);
-                        }}
-                        className="w-full text-left px-2 py-1 text-gray-600 hover:bg-gray-100 text-sm"
-                      >
-                        NEET Class 12 Program
-                      </button>
-                    </div>
-                  )}
-                </div>
+                ))}
               </div>
             )}
           </div>
@@ -273,7 +198,7 @@ const App = () => {
 
     const getVisibleCards = () => {
       const cards = [];
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < 1; i++) {
         const index = (currentSlide + i) % n;
         cards.push(sliderCards[index]);
       }
@@ -290,16 +215,16 @@ const App = () => {
             Featured Programs
           </h2>
 
-          <div className="relative max-w-4xl mx-auto">
-            <button
+          <div className="relative max-w-4xl mx-auto flex items-center justify-center   ">
+            {/* <button
               onClick={prevSlide}
               className="absolute left-2 lg:-left-12 top-1/2 transform -translate-y-1/2 z-10 p-2 rounded-full shadow-lg hover:shadow-xl transition-shadow"
               style={{ backgroundColor: "#f9dc41" }}
             >
               <ChevronLeft size={20} className="lg:w-6 lg:h-6" />
-            </button>
+            </button> */}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mx-12 lg:mx-0">
+            <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mx-12 lg:mx-0">
               {getVisibleCards().map((card) => (
                 <div
                   key={card.id}
@@ -313,16 +238,16 @@ const App = () => {
               ))}
             </div>
 
-            <button
+            {/* <button
               onClick={nextSlide}
               className="absolute right-2 lg:-right-12 top-1/2 transform -translate-y-1/2 z-10 p-2 rounded-full shadow-lg hover:shadow-xl transition-shadow"
               style={{ backgroundColor: "#f9dc41" }}
             >
               <ChevronRight size={20} className="lg:w-6 lg:h-6" />
-            </button>
+            </button> */}
           </div>
 
-          <div className="flex justify-center mt-6 space-x-2">
+          {/* <div className="flex justify-center mt-6 space-x-2">
             {Array.from({ length: 8 }, (_, index) => (
               <button
                 key={index}
@@ -332,7 +257,7 @@ const App = () => {
                 }`}
               />
             ))}
-          </div>
+          </div> */}
         </div>
       </div>
     );
@@ -375,26 +300,25 @@ const App = () => {
 
   const HomePage = () => (
     <div className="pt-40 lg:pt-20">
-      {showAd && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="relative bg-white rounded-lg shadow-lg p-0 max-w-md w-full">
-            {/* Close Button */}
-            <button
-              className="absolute top-2 right-2 text-white bg-red-500 rounded-full w-8 h-8 text-center text-xl"
-              onClick={closeAd}
-            >
-              &times;
-            </button>
-
-            {/* Ad Image */}
-            <img
-              src="/Advertisement.jpg" // Replace with your path
-              alt="Advertisement"
-              className="w-full rounded-b-lg object-contain"
-            />
-          </div>
-        </div>
-      )}
+      {
+        // <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        //   <div className="relative bg-white rounded-lg shadow-lg p-0 max-w-md w-full">
+        //     {/* Close Button */}
+        //     <button
+        //       className="absolute top-2 right-2 text-white bg-red-500 rounded-full w-8 h-8 text-center text-xl"
+        //       onClick={closeAd}
+        //     >
+        //       &times;
+        //     </button>
+        //     {/* Ad Image */}
+        //     <img
+        //       src="/Advertisement.jpg" // Replace with your path
+        //       alt="Advertisement"
+        //       className="w-full rounded-b-lg object-contain"
+        //     />
+        //   </div>
+        // </div>
+      }
       <CardSlider />
       <StaticCourseCards />
     </div>

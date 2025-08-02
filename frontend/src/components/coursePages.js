@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import RazorpayButton from "./razorpay_button";
 const CoursePage = ({ courseType }) => {
   const [showEnrollmentForm, setShowEnrollmentForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -13,48 +14,11 @@ const CoursePage = ({ courseType }) => {
   const [isVerified, setIsVerified] = useState(false);
 
   const courseData = {
-    ssc: {
-      title: "SSC Preparation",
-      description:
-        "Staff Selection Commission exam preparation with comprehensive coverage",
-      fees: "₹18,500",
-      cancelled_fee: "₹21,000",
-    },
-    neet: {
-      title: "NEET Coaching for Class 12",
-      description: "National Eligibility cum Entrance Test for medical courses",
-      fees: "₹55,000",
-      cancelled_fee: "₹65,000",
-    },
     gpsc: {
       title: "GPSC Class 1-2",
       description: "Gujarat Public Service Commission examination coaching",
       fees: "₹32,000",
       cancelled_fee: "₹50,000",
-    },
-    talati: {
-      title: "Talati Exam Prelims + Mains",
-      description: "Class 3",
-      fees: "₹12,000",
-      cancelled_fee: "₹20,000",
-    },
-    ethics: {
-      title: "Ethics and Essay for GPSC Class 1-2 Exam",
-      description: "Ethics and Essay for GPSC Class 1-2 Exam",
-      fees: "₹9,999",
-      cancelled_fee: "₹15,000",
-    },
-    neet12: {
-      title: "NEET Coaching for Class 12",
-      description: "National Eligibility cum Entrance Test for medical courses",
-      fees: "₹55,000",
-      cancelled_fee: "₹65,000",
-    },
-    neet11: {
-      title: "NEET Coaching for Class 11",
-      description: "National Eligibility cum Entrance Test for medical courses",
-      fees: "₹70,000",
-      cancelled_fee: "₹85,000",
     },
     upsc: {
       title: "UPSC Exam Prelims + Mains",
@@ -62,7 +26,7 @@ const CoursePage = ({ courseType }) => {
     },
   };
 
-  const course = courseData[courseType] || courseData.ssc;
+  const course = courseData[courseType] || courseData.gpsc;
 
   const API = process.env.REACT_APP_API_BASE_URL;
 
@@ -375,25 +339,16 @@ const CoursePage = ({ courseType }) => {
                   >
                     Cancel
                   </button>
-                  <button
-                    onClick={handleSubmitEnrollment}
-                    disabled={
-                      !isVerified || !formData.firstName || !formData.surname
-                    }
-                    className="flex-1 px-4 py-2 rounded-lg font-medium text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    style={{
-                      backgroundColor:
-                        isVerified && formData.firstName && formData.surname
-                          ? "#f9dc41"
-                          : "#9ca3af",
-                      color:
-                        isVerified && formData.firstName && formData.surname
-                          ? "#163233"
-                          : "#ffffff",
-                    }}
-                  >
-                    Complete Enrollment
-                  </button>
+
+                  {formData.firstName &&
+                    formData.phoneNumber &&
+                    course?.title && (
+                      <RazorpayButton
+                        name={formData.firstName}
+                        mobile={formData.phoneNumber}
+                        course={course.title}
+                      />
+                    )}
                 </div>
               </div>
             </div>

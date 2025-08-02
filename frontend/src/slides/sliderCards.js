@@ -1,43 +1,11 @@
 export const sliderCards = [
   {
     id: 1,
-    img_link: "12 NEET.jpg",
-    routing_link: "/neet",
-  },
-  {
-    id: 2,
     img_link: "GPSC.jpg",
     routing_link: "/gpsc",
   },
-  {
-    id: 3,
-    img_link: "HHH.jpg",
-    routing_link: "/upsc",
-  },
-  {
-    id: 4,
-    img_link: "TALATI.jpg",
-    routing_link: "/gpsc",
-  },
-  {
-    id: 5,
-    img_link: "NEET 11.jpg",
-    routing_link: "/neet",
-  },
-  {
-    id: 6,
-    img_link: "30 DAY.jpg",
-    routing_link: "/upsc",
-  },
 ];
 export const courseCards = [
-  {
-    id: 1,
-    title: "NEET  12",
-    description: "Medical entrance exam preparation with top faculty",
-    route: "/neet12",
-    color: "bg-green-100",
-  },
   {
     id: 2,
     title: "GPSC Training",
@@ -59,20 +27,6 @@ export const courseCards = [
     description: "Regular mock tests to assess your preparation level",
     route: "/testSeries",
     color: "bg-yellow-100",
-  },
-  {
-    id: 5,
-    title: "Talati Mains Preparation",
-    description: "Talati Mains exam coaching with expert guidance",
-    route: "/talati",
-    color: "bg-indigo-100",
-  },
-  {
-    id: 6,
-    title: "NEET  11",
-    description: "Medical entrance exam preparation with top faculty",
-    route: "/neet11",
-    color: "bg-green-100",
   },
 ];
 export const testSeriesCards = [
