@@ -4,6 +4,16 @@ export const sliderCards = [
     img_link: "GPSC.jpg",
     routing_link: "/gpsc",
   },
+  {
+    id: 2,
+    img_link: "abc.jpg",
+    routing_link: "/",
+  },
+  {
+    id: 3,
+    img_link: "def.jpg",
+    routing_link: "/",
+  },
 ];
 export const courseCards = [
   {

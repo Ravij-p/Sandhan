@@ -216,13 +216,13 @@ const App = () => {
           </h2>
 
           <div className="relative max-w-4xl mx-auto flex items-center justify-center   ">
-            {/* <button
+            <button
               onClick={prevSlide}
               className="absolute left-2 lg:-left-12 top-1/2 transform -translate-y-1/2 z-10 p-2 rounded-full shadow-lg hover:shadow-xl transition-shadow"
               style={{ backgroundColor: "#f9dc41" }}
             >
               <ChevronLeft size={20} className="lg:w-6 lg:h-6" />
-            </button> */}
+            </button>
 
             <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mx-12 lg:mx-0">
               {getVisibleCards().map((card) => (
@@ -233,22 +233,27 @@ const App = () => {
                     navigate(`${card.routing_link}`);
                   }}
                 >
-                  <img src={card.img_link} alt="SSC" height={300} width={480} />
+                  <img
+                    src={card.img_link}
+                    alt="Course card"
+                    height={300}
+                    width={480}
+                  />
                 </div>
               ))}
             </div>
 
-            {/* <button
+            <button
               onClick={nextSlide}
               className="absolute right-2 lg:-right-12 top-1/2 transform -translate-y-1/2 z-10 p-2 rounded-full shadow-lg hover:shadow-xl transition-shadow"
               style={{ backgroundColor: "#f9dc41" }}
             >
               <ChevronRight size={20} className="lg:w-6 lg:h-6" />
-            </button> */}
+            </button>
           </div>
 
-          {/* <div className="flex justify-center mt-6 space-x-2">
-            {Array.from({ length: 8 }, (_, index) => (
+          <div className="flex justify-center mt-6 space-x-2">
+            {Array.from({ length: 1 }, (_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
@@ -257,7 +262,7 @@ const App = () => {
                 }`}
               />
             ))}
-          </div> */}
+          </div>
         </div>
       </div>
     );
