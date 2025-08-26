@@ -17,12 +17,15 @@ const CoursePage = ({ courseType }) => {
     gpsc: {
       title: "GPSC Class 1-2",
       description: "Gujarat Public Service Commission examination coaching",
-      fees: "₹32,000",
-      cancelled_fee: "₹50,000",
+      fees: "₹17,500",
+      cancelled_fee: "₹32,000",
     },
     upsc: {
       title: "UPSC Exam Prelims + Mains",
-      description: "Coming soon",
+      description:
+        "25 Prelims + 30 Mains Tests with detailed solutions with printed class notes, 2 lectures per Day",
+      fees: "35,000",
+      cancelled_fee: "₹45,000",
     },
   };
 
@@ -149,66 +152,65 @@ const CoursePage = ({ courseType }) => {
             {course.title}
           </h1>
           <p className="text-lg text-gray-700 mb-8">{course.description}</p>
-          {course.title !== "UPSC Exam Prelims + Mains" && (
-            <div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
-                <div className="bg-white p-6 rounded-xl shadow-md">
-                  <h3
-                    className="text-xl font-bold mb-4"
-                    style={{ color: "#163233" }}
-                  >
-                    Course Features
-                  </h3>
-                  <ul className="text-left text-gray-700 space-y-2">
-                    <li>• Expert Faculty</li>
-                    <li>• Comprehensive Study Material</li>
-                    <li>• Regular Mock Tests</li>
-                    <li>• Doubt Clearing Sessions</li>
-                  </ul>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-md">
-                  <h3
-                    className="text-xl font-bold mb-4"
-                    style={{ color: "#163233" }}
-                  >
-                    Duration & Fees
-                  </h3>
-                  <div className="text-left text-gray-700 space-y-2">
-                    <div className="flex justify-between">
-                      <span>Duration:</span>
-                      <span>12 months</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Batch Size:</span>
-                      <span>50 students</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Fees:</span>
-                      <div>
-                        <del className="font-bold text-red-500 mr-2">
-                          {course.cancelled_fee}
-                        </del>
-                        <span className="font-bold text-green-600">
-                          {course.fees}
-                        </span>
-                      </div>
+
+          <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
+              <div className="bg-white p-6 rounded-xl shadow-md">
+                <h3
+                  className="text-xl font-bold mb-4"
+                  style={{ color: "#163233" }}
+                >
+                  Course Features
+                </h3>
+                <ul className="text-left text-gray-700 space-y-2">
+                  <li>• Expert Faculty</li>
+                  <li>• Comprehensive Study Material</li>
+                  <li>• Regular Mock Tests</li>
+                  <li>• Doubt Clearing Sessions</li>
+                </ul>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-md">
+                <h3
+                  className="text-xl font-bold mb-4"
+                  style={{ color: "#163233" }}
+                >
+                  Duration & Fees
+                </h3>
+                <div className="text-left text-gray-700 space-y-2">
+                  <div className="flex justify-between">
+                    <span>Duration:</span>
+                    <span>12 months</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Batch Size:</span>
+                    <span>50 students</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Fees:</span>
+                    <div>
+                      <del className="font-bold text-red-500 mr-2">
+                        {course.cancelled_fee}
+                      </del>
+                      <span className="font-bold text-green-600">
+                        {course.fees}
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => setShowEnrollmentForm(true)}
-                className="mt-8 px-8 py-3 rounded-lg font-medium text-lg transition-all hover:shadow-lg transform hover:scale-105"
-                style={{ backgroundColor: "#f9dc41", color: "#163233" }}
-              >
-                Enroll Now
-              </button>
             </div>
-          )}
+            <button
+              disabled
+              onClick={() => setShowEnrollmentForm(true)}
+              className="mt-8 px-8 py-3 rounded-lg font-medium text-lg transition-all hover:shadow-lg transform hover:scale-105"
+              style={{ backgroundColor: "#f9dc41", color: "#163233" }}
+            >
+              Contact now
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Enrollment Form Modal */}
       {showEnrollmentForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -284,17 +286,6 @@ const CoursePage = ({ courseType }) => {
                       maxLength="10"
                       required
                     />
-                    <button
-                      onClick={handleSendOTP}
-                      disabled={otpSent || isVerifying}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    >
-                      {isVerifying
-                        ? "Sending..."
-                        : otpSent
-                        ? "Sent"
-                        : "Send OTP"}
-                    </button>
                   </div>
                 </div>
 
@@ -321,14 +312,6 @@ const CoursePage = ({ courseType }) => {
                         {isVerifying ? "Verifying..." : "Verify"}
                       </button>
                     </div>
-                  </div>
-                )}
-
-                {isVerified && (
-                  <div className="p-3 bg-green-100 border border-green-300 rounded-lg">
-                    <p className="text-green-700 text-sm font-medium">
-                      ✓ Phone number verified successfully!
-                    </p>
                   </div>
                 )}
 

@@ -1,17 +1,12 @@
 export const sliderCards = [
   {
     id: 1,
-    img_link: "GPSC.jpg",
+    img_link: "WhatsApp Image 2025-08-26 at 08.08.35_26446f76.jpg",
     routing_link: "/gpsc",
   },
   {
     id: 2,
-    img_link: "abc.jpg",
-    routing_link: "/",
-  },
-  {
-    id: 3,
-    img_link: "def.jpg",
+    img_link: "WhatsApp Image 2025-08-26 at 08.09.19_1ce3463f.jpg",
     routing_link: "/",
   },
 ];
