@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import RazorpayButton from "./razorpay_button";
+
 const CoursePage = ({ courseType }) => {
   const [showEnrollmentForm, setShowEnrollmentForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -8,75 +8,27 @@ const CoursePage = ({ courseType }) => {
     surname: "",
     phoneNumber: "",
   });
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
 
   const courseData = {
     gpsc: {
       title: "GPSC Class 1-2",
       description: "Gujarat Public Service Commission examination coaching",
-      fees: "₹17,500",
+      fees: "17500",
       cancelled_fee: "₹32,000",
     },
     upsc: {
       title: "UPSC Exam Prelims + Mains",
       description:
         "25 Prelims + 30 Mains Tests with detailed solutions with printed class notes, 2 lectures per Day",
-      fees: "35,000",
+      fees: "35000",
       cancelled_fee: "₹45,000",
     },
   };
 
   const course = courseData[courseType] || courseData.gpsc;
-
   const API = process.env.REACT_APP_API_BASE_URL;
 
-  const handleSendOTP = async () => {
-    if (!formData.phoneNumber || formData.phoneNumber.length !== 10) {
-      alert("Please enter a valid 10-digit phone number");
-      return;
-    }
-
-    setIsVerifying(true);
-    try {
-      await fetch("http://localhost:5000/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobile: formData.phoneNumber }),
-      });
-
-      alert("OTP sent successfully");
-      setOtpSent(true);
-    } catch (err) {
-      alert("Failed to send OTP");
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-
-  const handleVerifyOTP = async () => {
-    if (!otp || otp.length !== 6) {
-      alert("Please enter a valid 6-digit OTP");
-      return;
-    }
-
-    setIsVerifying(true);
-    try {
-      const res = await axios.post(`${API}/verify-otp`, {
-        mobile: formData.phoneNumber,
-        otp,
-      });
-
-      setIsVerified(true);
-      alert("OTP verified successfully");
-    } catch (err) {
-      alert("Invalid OTP");
-    } finally {
-      setIsVerifying(false);
-    }
-  };
+  // Input Change Handler
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -85,47 +37,51 @@ const CoursePage = ({ courseType }) => {
     }));
   };
 
-  const handleSubmitEnrollment = async () => {
+  // Razorpay Payment Flow
+  const handlePayment = async () => {
     const { firstName, surname, phoneNumber } = formData;
 
-    if (!firstName || !surname || !isVerified) {
-      alert("Please fill all fields and verify your phone number");
+    if (!firstName || !surname || !phoneNumber) {
+      alert("Please fill all fields");
       return;
     }
 
     try {
-      const res = await axios.post(`${API}/register`, {
-        name: firstName,
-        surname,
+      // 1. Create Razorpay order
+      const { data } = await axios.post(`${API}/create-order`, {
+        amount: parseInt(course.fees),
+        name: `${firstName} ${surname}`,
         mobile: phoneNumber,
-        password: "testpass123", // You can change logic or generate randomly
+        course: course.title,
+        // fees without ₹
       });
 
-      const { username } = res.data;
-      console.log("User registered with username:", username);
-
-      // Now trigger Razorpay Payment
-      const order = await axios.post(`${API}/create-order`, {
-        amount: 1000,
-      });
-
+      // 2. Open Razorpay Checkout
       const options = {
-        key: process.env.REACT_APP_RAZORPAY_KEY,
-        amount: order.data.amount,
-        currency: "INR",
+        key: data.key,
+        amount: data.amount,
+        currency: data.currency,
         name: "Sandhan Academy",
-        description: "Course Enrollment",
-        order_id: order.data.id,
+        description: course.title,
+        order_id: data.orderId,
         handler: async function (response) {
-          // Payment success
-          await axios.post(`${API}/payment-success`, {
-            userId: username,
-            amount: 1000,
-            paymentId: response.razorpay_payment_id,
-            receiptUrl: order.data.receipt,
-          });
+          // 3. Verify payment with backend
 
-          alert("Payment successful! Receipt will be sent.");
+          const verifyRes = await axios.post(`${API}/verify-payment`, {
+            ...response,
+            name: `${firstName} ${surname}`,
+            mobile: phoneNumber,
+            course: course.title,
+            amount: data.amount,
+          });
+          if (verifyRes.data.success) {
+            const receiptNumber = verifyRes.data.receiptNumber;
+            window.open(
+              `http://localhost:5000/api/receipt/${receiptNumber}`,
+              "_blank"
+            );
+            // alert("✅ Payment successful. Receipt generated!");
+          }
         },
         prefill: {
           name: `${firstName} ${surname}`,
@@ -139,8 +95,8 @@ const CoursePage = ({ courseType }) => {
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
-      console.error(err);
-      alert("Registration or payment failed");
+      console.error("Payment error:", err);
+      alert("❌ Payment failed. Please try again.");
     }
   };
 
@@ -192,7 +148,7 @@ const CoursePage = ({ courseType }) => {
                         {course.cancelled_fee}
                       </del>
                       <span className="font-bold text-green-600">
-                        {course.fees}
+                        ₹{course.fees}
                       </span>
                     </div>
                   </div>
@@ -200,7 +156,6 @@ const CoursePage = ({ courseType }) => {
               </div>
             </div>
             <button
-              disabled
               onClick={() => setShowEnrollmentForm(true)}
               className="mt-8 px-8 py-3 rounded-lg font-medium text-lg transition-all hover:shadow-lg transform hover:scale-105"
               style={{ backgroundColor: "#f9dc41", color: "#163233" }}
@@ -235,7 +190,7 @@ const CoursePage = ({ courseType }) => {
                 <p className="text-sm text-gray-700 mt-1">
                   Fees:{" "}
                   <span className="font-bold text-green-600">
-                    {course.fees}
+                    ₹{course.fees}
                   </span>
                 </p>
               </div>
@@ -275,45 +230,17 @@ const CoursePage = ({ courseType }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Phone Number *
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="tel"
-                      name="phoneNumber"
-                      value={formData.phoneNumber}
-                      onChange={handleInputChange}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter 10-digit phone number"
-                      maxLength="10"
-                      required
-                    />
-                  </div>
+                  <input
+                    type="tel"
+                    name="phoneNumber"
+                    value={formData.phoneNumber}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter 10-digit phone number"
+                    maxLength="10"
+                    required
+                  />
                 </div>
-
-                {otpSent && !isVerified && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Enter OTP *
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Enter 6-digit OTP"
-                        maxLength="6"
-                        required
-                      />
-                      <button
-                        onClick={handleVerifyOTP}
-                        disabled={isVerifying}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                      >
-                        {isVerifying ? "Verifying..." : "Verify"}
-                      </button>
-                    </div>
-                  </div>
-                )}
 
                 <div className="flex gap-3 pt-4">
                   <button
@@ -323,15 +250,12 @@ const CoursePage = ({ courseType }) => {
                     Cancel
                   </button>
 
-                  {formData.firstName &&
-                    formData.phoneNumber &&
-                    course?.title && (
-                      <RazorpayButton
-                        name={formData.firstName}
-                        mobile={formData.phoneNumber}
-                        course={course.title}
-                      />
-                    )}
+                  <button
+                    onClick={handlePayment}
+                    className="flex-1 px-4 py-2 bg-yellow-400 text-[#163233] rounded-lg font-medium hover:bg-yellow-500"
+                  >
+                    Pay Now
+                  </button>
                 </div>
               </div>
             </div>
