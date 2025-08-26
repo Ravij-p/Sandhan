@@ -13,7 +13,7 @@ const CoursePage = ({ courseType }) => {
     gpsc: {
       title: "GPSC Class 1-2",
       description: "Gujarat Public Service Commission examination coaching",
-      fees: "17500",
+      fees: "5000",
       cancelled_fee: "₹32,000",
     },
     upsc: {
