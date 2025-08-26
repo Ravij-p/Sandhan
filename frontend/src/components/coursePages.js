@@ -76,10 +76,7 @@ const CoursePage = ({ courseType }) => {
           });
           if (verifyRes.data.success) {
             const receiptNumber = verifyRes.data.receiptNumber;
-            window.open(
-              `http://localhost:5000/api/receipt/${receiptNumber}`,
-              "_blank"
-            );
+            window.open(`${API}/receipt/${receiptNumber}`, "_blank");
             // alert("✅ Payment successful. Receipt generated!");
           }
         },
