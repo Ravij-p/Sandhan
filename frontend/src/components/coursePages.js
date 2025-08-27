@@ -61,9 +61,7 @@ const CoursePage = ({ courseType }) => {
     try {
       // 1. Create Razorpay order
       const { data } = await axios.post(`${API}/create-order`, {
-        amount: promocodeApplied
-          ? 7000 / 0.9764
-          : parseInt(course.fees) / 0.9764,
+        amount: promocodeApplied ? 7000 : parseInt(course.fees),
         name: `${firstName} ${surname}`,
         mobile: phoneNumber,
         course: course.title,
