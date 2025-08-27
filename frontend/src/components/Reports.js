@@ -75,8 +75,8 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="p-6 space-y-8">
-      <h1 className="text-2xl font-bold">📊 Reports & Analytics</h1>
+    <div className="p-6 space-y-8 pt-15 mt-15">
+      <h1 className="text-2xl font-bold mt-16">📊 Reports & Analytics</h1>
 
       {/* Stats Section */}
       {stats && (
