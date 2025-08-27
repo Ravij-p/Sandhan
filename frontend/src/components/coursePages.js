@@ -60,12 +60,25 @@ const CoursePage = ({ courseType }) => {
 
     try {
       // 1. Create Razorpay order
+      // Function to calculate the amount student has to pay
+      function calculatePayableAmount(fee) {
+        const gatewayFeePercent = 0.02; // 2%
+        const gstPercent = 0.18; // 18% GST on gateway fee
+        const totalDeductionPercent = gatewayFeePercent * (1 + gstPercent); // 0.0236
+
+        const payableAmount = fee / (1 - totalDeductionPercent);
+        return Math.ceil(payableAmount); // round up to nearest integer
+      }
+
+      // Calculate the course fee based on promo code
+      const baseFee = promocodeApplied ? 7000 : parseInt(course.fees);
+      const amountToPay = calculatePayableAmount(baseFee);
+
       const { data } = await axios.post(`${API}/create-order`, {
-        amount: promocodeApplied ? 7000 : parseInt(course.fees),
+        amount: amountToPay, // adjusted amount including Razorpay charges
         name: `${firstName} ${surname}`,
         mobile: phoneNumber,
         course: course.title,
-        // fees without ₹
       });
 
       // 2. Open Razorpay Checkout
