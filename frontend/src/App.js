@@ -13,6 +13,7 @@ import ContactPage from "./components/PolicyPages/ContactPage";
 import ShippingPolicy, {
   ShippingPage,
 } from "./components/PolicyPages/shippingPage";
+import ReportsPage from "./components/Reports";
 const App = () => {
   const [isCoursesDropdownOpen, setIsCoursesDropdownOpen] = useState(false);
   const [isNeetSubmenuOpen, setIsNeetSubmenuOpen] = useState(false);
@@ -349,6 +350,7 @@ const App = () => {
         <Route path="/termsAndCondition" element={<TermsAndConditions />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/shipping" element={<ShippingPolicy />} />
+        <Route path="/reports" element={<ReportsPage />} />
       </Routes>
       <footer className="bg-gray-800 text-white py-4 text-center mt-8">
         <a href="/privacyPolicy">Privacy Policy</a> |
