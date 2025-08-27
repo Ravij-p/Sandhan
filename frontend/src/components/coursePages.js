@@ -7,9 +7,9 @@ const CoursePage = ({ courseType }) => {
     firstName: "",
     surname: "",
     phoneNumber: "",
-    promocode: "",
   });
-
+  const [promocode, setpromocode] = useState("");
+  const [promocodeApplied, setpromocodeApplied] = useState(false);
   const courseData = {
     gpsc: {
       title: "GPSC Class 1-2",
@@ -39,15 +39,14 @@ const CoursePage = ({ courseType }) => {
     }));
   };
   const handlePromoCodeChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-    if (value === course.promo_code) {
-      const discountedFee = 7000;
-      course.fees = discountedFee;
-      alert(`Promo code applied! New fee is ₹${discountedFee}`);
+    setpromocode(e.target.value);
+
+    if (promocode === course.promo_code) {
+      setpromocodeApplied(true);
+      alert(`Promo code applied! New fee is ₹7000`);
+    } else {
+      setpromocodeApplied(false);
+      alert("Invalid promo code");
     }
   };
   // Razorpay Payment Flow
@@ -62,7 +61,7 @@ const CoursePage = ({ courseType }) => {
     try {
       // 1. Create Razorpay order
       const { data } = await axios.post(`${API}/create-order`, {
-        amount: parseInt(course.fees),
+        amount: promocodeApplied ? 7000 : parseInt(course.fees),
         name: `${firstName} ${surname}`,
         mobile: phoneNumber,
         course: course.title,
@@ -170,7 +169,7 @@ const CoursePage = ({ courseType }) => {
               className="mt-8 px-8 py-3 rounded-lg font-medium text-lg transition-all hover:shadow-lg transform hover:scale-105"
               style={{ backgroundColor: "#f9dc41", color: "#163233" }}
             >
-              Contact now
+              Register now
             </button>
           </div>
         </div>
@@ -214,7 +213,7 @@ const CoursePage = ({ courseType }) => {
                     type="text"
                     name="firstName"
                     value={formData.firstName}
-                    onChange={handlePromoCodeChange}
+                    onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter your first name"
                     required
@@ -251,19 +250,28 @@ const CoursePage = ({ courseType }) => {
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Promo code
-                  </label>
-                  <input
-                    type="text"
-                    name="promo code"
-                    value={formData.promocode}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter promo code"
-                  />
-                </div>
+                {course.title === "GPSC Class 1-2" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Promo code
+                    </label>
+                    <input
+                      type="text"
+                      name="promocode"
+                      value={promocode}
+                      onChange={(e) => setpromocode(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter promo code"
+                    />
+                    <button
+                      onClick={handlePromoCodeChange}
+                      className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                    >
+                      {" "}
+                      Validate
+                    </button>
+                  </div>
+                )}
                 <div className="flex gap-3 pt-4">
                   <button
                     onClick={() => setShowEnrollmentForm(false)}
