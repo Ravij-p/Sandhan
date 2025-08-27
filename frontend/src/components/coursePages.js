@@ -21,7 +21,7 @@ const CoursePage = ({ courseType }) => {
     upsc: {
       title: "UPSC Exam Prelims + Mains",
       description:
-        "25 Prelims + 30 Mains Tests with detailed solutions with printed class notes, 2 lectures per Day",
+        "25 Prelims + 30 Mains Tests with detailed solutions with printed class notes, 2 lectures per Day ",
       fees: "35000",
       cancelled_fee: "₹45,000",
     },
@@ -61,7 +61,9 @@ const CoursePage = ({ courseType }) => {
     try {
       // 1. Create Razorpay order
       const { data } = await axios.post(`${API}/create-order`, {
-        amount: promocodeApplied ? 7000 : parseInt(course.fees),
+        amount: promocodeApplied
+          ? 7000 / 0.9764
+          : parseInt(course.fees) / 0.9764,
         name: `${firstName} ${surname}`,
         mobile: phoneNumber,
         course: course.title,
