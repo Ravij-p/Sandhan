@@ -7,14 +7,16 @@ const CoursePage = ({ courseType }) => {
     firstName: "",
     surname: "",
     phoneNumber: "",
+    promocode: "",
   });
 
   const courseData = {
     gpsc: {
       title: "GPSC Class 1-2",
       description: "Gujarat Public Service Commission examination coaching",
-      fees: "5000",
+      fees: "17500",
       cancelled_fee: "₹32,000",
+      promo_code: "KDSTUDENT",
     },
     upsc: {
       title: "UPSC Exam Prelims + Mains",
@@ -36,7 +38,18 @@ const CoursePage = ({ courseType }) => {
       [name]: value,
     }));
   };
-
+  const handlePromoCodeChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+    if (value === course.promo_code) {
+      const discountedFee = 7000;
+      course.fees = discountedFee;
+      alert(`Promo code applied! New fee is ₹${discountedFee}`);
+    }
+  };
   // Razorpay Payment Flow
   const handlePayment = async () => {
     const { firstName, surname, phoneNumber } = formData;
@@ -201,7 +214,7 @@ const CoursePage = ({ courseType }) => {
                     type="text"
                     name="firstName"
                     value={formData.firstName}
-                    onChange={handleInputChange}
+                    onChange={handlePromoCodeChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter your first name"
                     required
@@ -238,7 +251,19 @@ const CoursePage = ({ courseType }) => {
                     required
                   />
                 </div>
-
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Promo code
+                  </label>
+                  <input
+                    type="text"
+                    name="promo code"
+                    value={formData.promocode}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter promo code"
+                  />
+                </div>
                 <div className="flex gap-3 pt-4">
                   <button
                     onClick={() => setShowEnrollmentForm(false)}
