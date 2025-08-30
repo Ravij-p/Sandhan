@@ -8,28 +8,33 @@ const CoursePage = ({ courseType }) => {
     surname: "",
     phoneNumber: "",
   });
-  const [promocode, setpromocode] = useState("");
-  const [promocodeApplied, setpromocodeApplied] = useState(false);
   const courseData = {
     gpsc: {
       title: "GPSC Class 1-2",
       description: "Gujarat Public Service Commission examination coaching",
-      fees: "17500",
+      fees: "10000",
+      with_material_fees: "17500",
       cancelled_fee: "₹32,000",
-      promo_code: "KDSTUDENT",
     },
     upsc: {
       title: "UPSC Exam Prelims + Mains",
       description:
         "25 Prelims + 30 Mains Tests with detailed solutions with printed class notes, 2 lectures per Day ",
       fees: "35000",
+
+      with_material_fees: "35000",
       cancelled_fee: "₹45,000",
     },
   };
 
   const course = courseData[courseType] || courseData.gpsc;
   const API = process.env.REACT_APP_API_BASE_URL;
+  const [withMaterial, setWithMaterial] = useState(false);
 
+  // handle checkbox change
+  const handleCheckboxChange = (event) => {
+    setWithMaterial(event.target.checked);
+  };
   // Input Change Handler
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -37,17 +42,6 @@ const CoursePage = ({ courseType }) => {
       ...prevData,
       [name]: value,
     }));
-  };
-  const handlePromoCodeChange = (e) => {
-    setpromocode(e.target.value);
-
-    if (promocode === course.promo_code) {
-      setpromocodeApplied(true);
-      alert(`Promo code applied! New fee is ₹7000`);
-    } else {
-      setpromocodeApplied(false);
-      alert("Invalid promo code");
-    }
   };
   // Razorpay Payment Flow
   const handlePayment = async () => {
@@ -59,29 +53,31 @@ const CoursePage = ({ courseType }) => {
     }
 
     try {
-      // 1. Create Razorpay order
-      // Function to calculate the amount student has to pay
+      // 1. Function to calculate the payable amount (fees + gateway fee + GST)
       function calculatePayableAmount(fee) {
         const gatewayFeePercent = 0.02; // 2%
         const gstPercent = 0.18; // 18% GST on gateway fee
         const totalDeductionPercent = gatewayFeePercent * (1 + gstPercent); // 0.0236
 
         const payableAmount = fee / (1 - totalDeductionPercent);
-        return Math.ceil(payableAmount); // round up to nearest integer
+        return Math.ceil(payableAmount); // round up
       }
 
-      // Calculate the course fee based on promo code
-      const baseFee = promocodeApplied ? 7000 : parseInt(course.fees);
+      // 2. Calculate the course fee (with promo code if applied)
+      const baseFee = withMaterial
+        ? parseInt(course.with_material_fees)
+        : parseInt(course.fees);
       const amountToPay = calculatePayableAmount(baseFee);
 
+      // 3. Create Razorpay order from backend
       const { data } = await axios.post(`${API}/create-order`, {
-        amount: amountToPay, // adjusted amount including Razorpay charges
+        amount: amountToPay,
         name: `${firstName} ${surname}`,
         mobile: phoneNumber,
         course: course.title,
       });
 
-      // 2. Open Razorpay Checkout
+      // 4. Configure Razorpay checkout
       const options = {
         key: data.key,
         amount: data.amount,
@@ -90,19 +86,32 @@ const CoursePage = ({ courseType }) => {
         description: course.title,
         order_id: data.orderId,
         handler: async function (response) {
-          // 3. Verify payment with backend
+          try {
+            // 5. Verify payment with backend
+            const verifyRes = await axios.post(`${API}/verify-payment`, {
+              ...response,
+              name: `${firstName} ${surname}`,
+              mobile: phoneNumber,
+              course: course.title,
+              amount: data.amount,
+            });
 
-          const verifyRes = await axios.post(`${API}/verify-payment`, {
-            ...response,
-            name: `${firstName} ${surname}`,
-            mobile: phoneNumber,
-            course: course.title,
-            amount: data.amount,
-          });
-          if (verifyRes.data.success) {
-            const receiptNumber = verifyRes.data.receiptNumber;
-            window.open(`${API}/receipt/${receiptNumber}`, "_blank");
-            // alert("✅ Payment successful. Receipt generated!");
+            if (verifyRes.data.success) {
+              const receiptNumber = verifyRes.data.receiptNumber;
+
+              // ✅ Safely trigger PDF receipt download
+              const link = document.createElement("a");
+              link.href = `${API}/receipt/${receiptNumber}`;
+              link.download = `receipt_${receiptNumber}.pdf`; // suggest filename
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+
+              alert("✅ Payment successful. Receipt downloaded!");
+            }
+          } catch (err) {
+            console.error("Verify payment error:", err);
+            alert("❌ Payment verified, but receipt download failed.");
           }
         },
         prefill: {
@@ -114,6 +123,7 @@ const CoursePage = ({ courseType }) => {
         },
       };
 
+      // 6. Open Razorpay checkout
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
@@ -170,7 +180,9 @@ const CoursePage = ({ courseType }) => {
                         {course.cancelled_fee}
                       </del>
                       <span className="font-bold text-green-600">
-                        ₹{course.fees}
+                        {withMaterial
+                          ? `₹${course.with_material_fees}`
+                          : `₹${course.fees}`}
                       </span>
                     </div>
                   </div>
@@ -212,7 +224,9 @@ const CoursePage = ({ courseType }) => {
                 <p className="text-sm text-gray-700 mt-1">
                   Fees:{" "}
                   <span className="font-bold text-green-600">
-                    ₹{course.fees}
+                    {withMaterial
+                      ? `₹${course.with_material_fees}`
+                      : `₹${course.fees}`}
                   </span>
                 </p>
               </div>
@@ -265,24 +279,15 @@ const CoursePage = ({ courseType }) => {
                 </div>
                 {course.title === "GPSC Class 1-2" && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Promo code
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={withMaterial}
+                        onChange={handleCheckboxChange}
+                        className="w-4 h-4"
+                      />
+                      <span>Include Material (+ Rs. 7500)</span>
                     </label>
-                    <input
-                      type="text"
-                      name="promocode"
-                      value={promocode}
-                      onChange={(e) => setpromocode(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter promo code"
-                    />
-                    <button
-                      onClick={handlePromoCodeChange}
-                      className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
-                    >
-                      {" "}
-                      Validate
-                    </button>
                   </div>
                 )}
                 <div className="flex gap-3 pt-4">
