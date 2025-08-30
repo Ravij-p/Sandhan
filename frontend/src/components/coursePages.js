@@ -12,7 +12,8 @@ const CoursePage = ({ courseType }) => {
     gpsc: {
       title: "GPSC Class 1-2",
       description: "Gujarat Public Service Commission examination coaching",
-      fees: "17500",
+      fees: "10000",
+      with_material_fees: "17500",
       cancelled_fee: "₹32,000",
     },
     upsc: {
@@ -20,13 +21,20 @@ const CoursePage = ({ courseType }) => {
       description:
         "25 Prelims + 30 Mains Tests with detailed solutions with printed class notes, 2 lectures per Day ",
       fees: "35000",
+
+      with_material_fees: "35000",
       cancelled_fee: "₹45,000",
     },
   };
 
   const course = courseData[courseType] || courseData.gpsc;
   const API = process.env.REACT_APP_API_BASE_URL;
+  const [withMaterial, setWithMaterial] = useState(false);
 
+  // handle checkbox change
+  const handleCheckboxChange = (event) => {
+    setWithMaterial(event.target.checked);
+  };
   // Input Change Handler
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -56,7 +64,9 @@ const CoursePage = ({ courseType }) => {
       }
 
       // 2. Calculate the course fee (with promo code if applied)
-      const baseFee = parseInt(course.fees);
+      const baseFee = withMaterial
+        ? parseInt(course.with_material_fees)
+        : parseInt(course.fees);
       const amountToPay = calculatePayableAmount(baseFee);
 
       // 3. Create Razorpay order from backend
@@ -170,7 +180,9 @@ const CoursePage = ({ courseType }) => {
                         {course.cancelled_fee}
                       </del>
                       <span className="font-bold text-green-600">
-                        ₹{course.fees}
+                        {withMaterial
+                          ? `₹${course.with_material_fees}`
+                          : `₹${course.fees}`}
                       </span>
                     </div>
                   </div>
@@ -212,7 +224,9 @@ const CoursePage = ({ courseType }) => {
                 <p className="text-sm text-gray-700 mt-1">
                   Fees:{" "}
                   <span className="font-bold text-green-600">
-                    ₹{course.fees}
+                    {withMaterial
+                      ? `₹${course.with_material_fees}`
+                      : `₹${course.fees}`}
                   </span>
                 </p>
               </div>
@@ -263,6 +277,19 @@ const CoursePage = ({ courseType }) => {
                     required
                   />
                 </div>
+                {course.title === "GPSC Class 1-2" && (
+                  <div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={withMaterial}
+                        onChange={handleCheckboxChange}
+                        className="w-4 h-4"
+                      />
+                      <span>Include Material (+ Rs. 7500)</span>
+                    </label>
+                  </div>
+                )}
                 <div className="flex gap-3 pt-4">
                   <button
                     onClick={() => setShowEnrollmentForm(false)}
