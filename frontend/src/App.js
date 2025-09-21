@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, ChevronDown, Menu } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Menu,
+  User,
+  LogOut,
+} from "lucide-react";
 import CoursePage from "./components/coursePages";
 import Header from "./components/Header";
 import { sliderCards, courseCards } from "./slides/sliderCards";
@@ -10,23 +17,38 @@ import RefundPolicy from "./components/PolicyPages/refundPolicy";
 import PrivacyPolicy from "./components/PolicyPages/privacyPolicy";
 import TermsAndConditions from "./components/PolicyPages/TermsAndConditions";
 import ContactPage from "./components/PolicyPages/ContactPage";
-import ShippingPolicy, {
-  ShippingPage,
-} from "./components/PolicyPages/shippingPage";
+import ShippingPolicy from "./components/PolicyPages/shippingPage";
 import ReportsPage from "./components/Reports";
-const App = () => {
+
+// New components
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import AuthModal from "./components/auth/AuthModal";
+import StudentDashboard from "./components/student/StudentDashboard";
+import AdminDashboard from "./components/admin/AdminDashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
+import CourseList from "./components/courses/CourseList";
+import CourseDetail from "./components/courses/CourseDetail";
+import VideoPlayer from "./components/courses/VideoPlayer";
+import AdminCoursePage from "./components/admin/AdminCoursePage";
+import CreateCoursePage from "./components/admin/CreateCoursePage";
+import AdminTestSeriesManagement from "./components/admin/AdminTestSeriesManagement";
+const AppContent = () => {
   const [isCoursesDropdownOpen, setIsCoursesDropdownOpen] = useState(false);
-  const [isNeetSubmenuOpen, setIsNeetSubmenuOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAd, setShowAd] = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
   const navigate = useNavigate();
+  const { isAuthenticated, isStudent, isAdmin, logout } = useAuth();
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % 8);
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+
   useEffect(() => {
     // Optional: Uncomment below if you want ad only once per visit
     const adShown = sessionStorage.getItem("adShown");
@@ -35,15 +57,41 @@ const App = () => {
       sessionStorage.setItem("adShown", "true");
     }
   }, []);
-  const closeAd = () => {
-    setShowAd(false);
-  };
+
+  // Fetch courses for navbar
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await fetch(
+          `${
+            process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api"
+          }/courses`
+        );
+        const data = await response.json();
+        if (data.success) {
+          setCourses(data.courses);
+        }
+      } catch (error) {
+        console.error("Error fetching courses for navbar:", error);
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
+
+    fetchCourses();
+  }, []);
   const Navigation = () => (
     <nav className="fixed top-0 left-0 right-0 z-40 bg-[#f9dc41] shadow-md px-4 mt-20 sm:mt-14 lg:mt-8">
-      <div className="container mx-auto flex items-center justify-between py-3">
-        <div className="flex items-center space-x-3">
-          <img src="/Logo.svg" alt="Logo" width={50} height={50} />
-          <h1 className="text-lg sm:text-xl font-bold text-gray-800">
+      <div className="container mx-auto flex items-center justify-between py-2 sm:py-3">
+        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+          <img
+            src="/Logo.svg"
+            alt="Logo"
+            width={40}
+            height={40}
+            className="sm:w-12 sm:h-12 flex-shrink-0"
+          />
+          <h1 className="text-sm sm:text-lg lg:text-xl font-bold text-gray-800 truncate">
             SANDHAN GROUP OF INSTITUTE
           </h1>
         </div>
@@ -70,21 +118,36 @@ const App = () => {
             </button>
 
             {isCoursesDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border min-w-32 z-50">
-                {["/gpsc", "/upsc"].map((path, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      navigate(path);
-                      setIsCoursesDropdownOpen(false);
-                    }}
-                    className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${
-                      idx === 0 ? "rounded-t-lg" : ""
-                    } ${idx === 4 ? "rounded-b-lg" : ""}`}
-                  >
-                    {path.slice(1).toUpperCase()}
-                  </button>
-                ))}
+              <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border min-w-48 z-50">
+                <button
+                  onClick={() => {
+                    navigate("/courses");
+                    setIsCoursesDropdownOpen(false);
+                  }}
+                  className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-t-lg"
+                >
+                  All Courses
+                </button>
+                {loadingCourses ? (
+                  <div className="px-4 py-2 text-gray-500 text-sm">
+                    Loading...
+                  </div>
+                ) : (
+                  courses.map((course, idx) => (
+                    <button
+                      key={course._id}
+                      onClick={() => {
+                        navigate(`/course/${course._id}`);
+                        setIsCoursesDropdownOpen(false);
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${
+                        idx === courses.length - 1 ? "rounded-b-lg" : ""
+                      }`}
+                    >
+                      {course.title}
+                    </button>
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -101,7 +164,6 @@ const App = () => {
           >
             Test Series
           </NavLink>
-
           <NavLink
             to="/about"
             className={({ isActive }) =>
@@ -114,12 +176,51 @@ const App = () => {
           >
             About
           </NavLink>
+
+          {/* Authentication buttons */}
+          {isAuthenticated ? (
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              {isStudent && (
+                <NavLink
+                  to="/dashboard"
+                  className="flex items-center space-x-1 px-2 sm:px-3 py-2 rounded text-gray-800 hover:bg-gray-200 text-sm"
+                >
+                  <User size={14} className="sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Dashboard</span>
+                </NavLink>
+              )}
+              {isAdmin && (
+                <NavLink
+                  to="/admin"
+                  className="flex items-center space-x-1 px-2 sm:px-3 py-2 rounded text-gray-800 hover:bg-gray-200 text-sm"
+                >
+                  <User size={14} className="sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Admin</span>
+                </NavLink>
+              )}
+              <button
+                onClick={logout}
+                className="flex items-center space-x-1 px-2 sm:px-3 py-2 rounded text-gray-800 hover:bg-gray-200 text-sm"
+              >
+                <LogOut size={14} className="sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="flex items-center space-x-1 px-2 sm:px-3 py-2 rounded text-gray-800 hover:bg-gray-200 text-sm"
+            >
+              <User size={14} className="sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Login</span>
+            </button>
+          )}
         </div>
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="lg:hidden text-gray-800"
+          className="lg:hidden text-gray-800 p-1"
         >
-          <Menu size={28} />
+          <Menu size={24} />
         </button>
       </div>
 
@@ -147,6 +248,15 @@ const App = () => {
 
             {isCoursesDropdownOpen && (
               <div className="flex flex-col pl-4 space-y-1">
+                <button
+                  onClick={() => {
+                    navigate("/courses");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full text-left px-2 py-1 text-gray-700 hover:bg-gray-100"
+                >
+                  All Courses
+                </button>
                 {["/gpsc", "/upsc"].map((path, idx) => (
                   <button
                     key={idx}
@@ -185,9 +295,57 @@ const App = () => {
                   : "text-gray-800 hover:bg-gray-200"
               }`
             }
+            onClick={() => setIsMobileMenuOpen(false)}
           >
             About
           </NavLink>
+
+          {/* Mobile Authentication buttons */}
+          {isAuthenticated ? (
+            <div className="space-y-1">
+              {isStudent && (
+                <NavLink
+                  to="/dashboard"
+                  className="flex items-center space-x-2 px-4 py-2 rounded text-gray-800 hover:bg-gray-200"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <User size={16} />
+                  <span>Dashboard</span>
+                </NavLink>
+              )}
+              {isAdmin && (
+                <NavLink
+                  to="/admin"
+                  className="flex items-center space-x-2 px-4 py-2 rounded text-gray-800 hover:bg-gray-200"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <User size={16} />
+                  <span>Admin</span>
+                </NavLink>
+              )}
+              <button
+                onClick={() => {
+                  logout();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center space-x-2 px-4 py-2 rounded text-gray-800 hover:bg-gray-200 w-full text-left"
+              >
+                <LogOut size={16} />
+                <span>Logout</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                setShowAuthModal(true);
+                setIsMobileMenuOpen(false);
+              }}
+              className="flex items-center space-x-2 px-4 py-2 rounded text-gray-800 hover:bg-gray-200 w-full text-left"
+            >
+              <User size={16} />
+              <span>Login</span>
+            </button>
+          )}
         </div>
       )}
     </nav>
@@ -305,7 +463,7 @@ const App = () => {
   );
 
   const HomePage = () => (
-    <div className="pt-40 lg:pt-20">
+    <div className="pt-32 sm:pt-28 md:pt-24 lg:pt-20">
       {
         // <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
         //   <div className="relative bg-white rounded-lg shadow-lg p-0 max-w-md w-full">
@@ -351,13 +509,82 @@ const App = () => {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/shipping" element={<ShippingPolicy />} />
         <Route path="/reports" element={<ReportsPage />} />
+
+        {/* Course routes */}
+        <Route path="/courses" element={<CourseList />} />
+        <Route path="/course/:courseId" element={<CourseDetail />} />
+        <Route
+          path="/course/:courseId/video/:videoId"
+          element={
+            <ProtectedRoute requireStudent={true}>
+              <VideoPlayer />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* New authenticated routes */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute requireStudent={true}>
+              <StudentDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/courses"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminCoursePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/courses/new"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <CreateCoursePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/test-series"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminTestSeriesManagement />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
+
       <footer className="bg-gray-800 text-white py-4 text-center mt-8">
         <a href="/privacyPolicy">Privacy Policy</a> |
         <a href="/termsAndCondition">Terms & Conditions</a> |
         <a href="/refundPolicy">Refund Policy</a>
       </footer>
     </div>
+  );
+};
+
+const App = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 

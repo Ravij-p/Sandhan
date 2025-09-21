@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 
+// Legacy User model for backward compatibility with existing payments
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -43,6 +44,17 @@ const userSchema = new mongoose.Schema(
     },
     razorpayPaymentId: {
       type: String,
+      sparse: true,
+    },
+    // New fields for integration with Student model
+    studentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Student",
+      sparse: true,
+    },
+    courseId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Course",
       sparse: true,
     },
   },

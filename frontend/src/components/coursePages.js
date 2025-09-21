@@ -133,7 +133,7 @@ const CoursePage = ({ courseType }) => {
   };
 
   return (
-    <div className="pt-24">
+    <div className="pt-32 sm:pt-28 md:pt-24 lg:pt-20">
       <div className="py-20" style={{ backgroundColor: "#fafaee" }}>
         <div className="container mx-auto px-4 max-w-4xl text-center">
           <h1 className="text-4xl font-bold mb-8" style={{ color: "#163233" }}>

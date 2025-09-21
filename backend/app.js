@@ -15,9 +15,17 @@ const { generateReceipt } = require("./utils/pdfGenerator");
 const { generateExcelReport } = require("./utils/excelGenerator");
 const { log } = require("console");
 
+// Import new routes
+const authRoutes = require("./routes/auth");
+const courseRoutes = require("./routes/courses");
+const adminRoutes = require("./routes/admin");
+const paymentRoutes = require("./routes/payments");
+const testSeriesRoutes = require("./routes/testSeries");
+const documentRoutes = require("./routes/documents");
+
 const app = express();
 const PORT = process.env.PORT || 5000;
-
+app.use(express.json());
 // Initialize Razorpay
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -43,15 +51,31 @@ connectDB();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.static("uploads")); // Serve uploaded files
 
-// Create receipts directory if it doesn't exist
+// Create necessary directories
 const receiptsDir = path.join(__dirname, "receipts");
+const uploadsDir = path.join(__dirname, "uploads");
+
 if (!fs.existsSync(receiptsDir)) {
   fs.mkdirSync(receiptsDir);
 }
 
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
 // API Routes
 
+// New authentication and course routes
+app.use("/api/auth", authRoutes);
+app.use("/api/courses", courseRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/test-series", testSeriesRoutes);
+app.use("/api/documents", documentRoutes);
+
+// Legacy payment routes (keep for backward compatibility)
 // Create Razorpay Order
 app.post("/api/create-order", async (req, res) => {
   console.log("---- /api/create-order hit ----");
@@ -147,7 +171,7 @@ app.post("/api/verify-payment", async (req, res) => {
       .toString()
       .padStart(4, "0")}`;
 
-    // Create user record
+    // Create user record (legacy)
     const userData = {
       name: name.trim(),
       mobile: mobile.trim(),
@@ -162,6 +186,9 @@ app.post("/api/verify-payment", async (req, res) => {
 
     const user = new User(userData);
     await user.save();
+
+    // TODO: Integrate with new Student model
+    // This will be handled in the new payment flow
 
     const receiptId = `receipt_SDN${new Date()
       .toISOString()
