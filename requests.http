@@ -1,9 +1,0 @@
-### Create Admin
-POST http://localhost:5000/api/admin/create-admin
-Content-Type:application/json
-
-{
-  "name": "Parth Senjaliya",
-  "email": "parthSenjaliya@sandhan.com",
-  "password": "ParthSenjaliya123"
-}
