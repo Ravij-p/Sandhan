@@ -1,5 +1,4 @@
 const express = require("express");
-const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const moment = require("moment");
 const Student = require("../models/Student");
@@ -10,11 +9,7 @@ const { verifyToken, requireStudent } = require("../middleware/auth");
 
 const router = express.Router();
 
-// Initialize Razorpay
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_SECRET,
-});
+// Razorpay removed: use /api/upi-payments instead
 
 // Create payment order for course enrollment
 router.post("/create-order", verifyToken, requireStudent, async (req, res) => {
@@ -67,14 +62,14 @@ router.post("/create-order", verifyToken, requireStudent, async (req, res) => {
       },
     };
 
-    const order = await razorpay.orders.create(options);
+    // const order = await razorpay.orders.create(options); // Razorpay removed
 
     res.json({
       success: true,
-      orderId: order.id,
-      amount: order.amount,
-      currency: order.currency,
-      key: process.env.RAZORPAY_KEY_ID,
+      // orderId: order.id, // Razorpay removed
+      amount: amountToPay, // Use calculated amount
+      currency: "INR",
+      // key: process.env.RAZORPAY_KEY_ID, // Razorpay removed
       course: {
         id: course._id,
         title: course.title,
@@ -268,14 +263,14 @@ router.post(
         },
       };
 
-      const order = await razorpay.orders.create(options);
+      // const order = await razorpay.orders.create(options); // Razorpay removed
 
       res.json({
         success: true,
-        orderId: order.id,
-        amount: order.amount,
-        currency: order.currency,
-        key: process.env.RAZORPAY_KEY_ID,
+        // orderId: order.id, // Razorpay removed
+        amount: amountToPay, // Use calculated amount
+        currency: "INR",
+        // key: process.env.RAZORPAY_KEY_ID, // Razorpay removed
         testSeries: {
           id: testSeries._id,
           title: testSeries.title,

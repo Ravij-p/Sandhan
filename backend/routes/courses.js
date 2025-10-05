@@ -333,7 +333,7 @@ router.post(
   upload.single("video"),
   async (req, res) => {
     try {
-      const { title, description, duration, order } = req.body;
+      const { title, description, duration, order, cloudinaryUrl } = req.body;
       const courseId = req.params.id;
 
       // Validation
@@ -343,7 +343,39 @@ router.post(
           .json({ error: "Title and video file are required" });
       }
 
-      // Validate file type and size
+      // Support Cloudinary-hosted videos when URL is provided
+      if (cloudinaryUrl) {
+        const video = new Video({
+          title,
+          description: description || "",
+          videoUrl: cloudinaryUrl,
+          thumbnail: "",
+          duration: duration ? parseInt(duration) : 0,
+          order: order ? parseInt(order) : 0,
+          course: courseId,
+          createdBy: req.user._id,
+        });
+        await video.save();
+        const course = await Course.findById(courseId);
+        if (course) {
+          course.videos.push(video._id);
+          await course.save();
+        }
+        return res.status(201).json({
+          success: true,
+          message: "Video added from Cloudinary URL",
+          video: {
+            _id: video._id,
+            title: video.title,
+            description: video.description,
+            duration: video.duration,
+            order: video.order,
+            course: video.course,
+          },
+        });
+      }
+
+      // Validate file type and size for direct uploads to R2
       if (!CloudflareR2Service.validateFileType(req.file)) {
         return res
           .status(400)

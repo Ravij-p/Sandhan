@@ -25,6 +25,10 @@ const CourseDetail = () => {
   const [error, setError] = useState("");
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
+  const [upiUrl, setUpiUrl] = useState("");
+  const [utrNumber, setUtrNumber] = useState("");
+  const [submittingUtr, setSubmittingUtr] = useState(false);
+  const [receipt, setReceipt] = useState(null);
 
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
@@ -38,23 +42,14 @@ const CourseDetail = () => {
 
   const fetchCourseDetails = async () => {
     try {
-      console.log("Fetching course details for ID:", courseId);
       const response = await axios.get(`${API_BASE_URL}/courses/${courseId}`);
-      console.log("Course details response:", response.data);
       if (response.data.success && response.data.course) {
         setCourse(response.data.course);
       } else {
         setError("Course not found or invalid response");
       }
     } catch (error) {
-      console.error("Error fetching course details:", error);
-      if (error.response?.status === 404) {
-        setError("Course not found");
-      } else if (error.response?.status === 500) {
-        setError("Server error. Please try again later.");
-      } else {
-        setError("Failed to load course details");
-      }
+      setError("Failed to load course details");
     } finally {
       setLoading(false);
     }
@@ -78,7 +73,7 @@ const CourseDetail = () => {
         fetchVideos();
       }
     } catch (error) {
-      console.error("Error checking enrollment:", error);
+      // ignore
     }
   };
 
@@ -95,7 +90,7 @@ const CourseDetail = () => {
       );
       setVideos(response.data.videos);
     } catch (error) {
-      console.error("Error fetching videos:", error);
+      // ignore
     }
   };
 
@@ -107,76 +102,46 @@ const CourseDetail = () => {
     setShowEnrollmentModal(true);
   };
 
-  const handlePayment = async () => {
+  const handleInitiateUpi = async () => {
     if (!isAuthenticated || !isStudent) {
       alert("Please login as a student to enroll");
       return;
     }
-
     try {
       const token = localStorage.getItem("token");
-      // Create payment order
-      const orderResponse = await axios.post(
-        `${API_BASE_URL}/payments/create-order`,
-        {
-          courseId: courseId,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const res = await axios.post(
+        `${API_BASE_URL}/upi-payments/initiate`,
+        { courseId },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
+      if (res.data.success) {
+        setUpiUrl(res.data.upiUrl);
+        window.location.href = res.data.upiUrl;
+      }
+    } catch (e) {
+      alert("Failed to initiate UPI payment");
+    }
+  };
 
-      // Configure Razorpay
-      const options = {
-        key: orderResponse.data.key,
-        amount: orderResponse.data.amount,
-        currency: orderResponse.data.currency,
-        name: "Sandhan Academy",
-        description: course.title,
-        order_id: orderResponse.data.orderId,
-        handler: async function (response) {
-          try {
-            // Verify payment
-            const verifyResponse = await axios.post(
-              `${API_BASE_URL}/payments/verify-payment`,
-              {
-                ...response,
-                courseId: courseId,
-              },
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              }
-            );
-
-            if (verifyResponse.data.success) {
-              alert("Payment successful! You now have access to this course.");
-              setIsEnrolled(true);
-              setShowEnrollmentModal(false);
-              fetchVideos();
-            }
-          } catch (error) {
-            console.error("Payment verification error:", error);
-            alert("Payment verification failed");
-          }
-        },
-        prefill: {
-          name: user?.name,
-          contact: user?.mobile,
-        },
-        theme: {
-          color: "#163233",
-        },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch (error) {
-      console.error("Payment error:", error);
-      alert("Payment failed. Please try again.");
+  const handleSubmitUtr = async () => {
+    if (!utrNumber || !courseId) return;
+    try {
+      setSubmittingUtr(true);
+      const token = localStorage.getItem("token");
+      const res = await axios.post(
+        `${API_BASE_URL}/upi-payments/submit-utr`,
+        { courseId, utrNumber },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.data.success) {
+        setReceipt(res.data.receipt);
+      }
+    } catch (e) {
+      alert(
+        e?.response?.data?.error || "Failed to submit UTR. Please check and retry."
+      );
+    } finally {
+      setSubmittingUtr(false);
     }
   };
 
@@ -462,9 +427,7 @@ const CourseDetail = () => {
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900">
-                  Enroll in Course
-                </h2>
+                <h2 className="text-xl font-bold text-gray-900">Enroll in Course</h2>
                 <button
                   onClick={() => setShowEnrollmentModal(false)}
                   className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -473,13 +436,7 @@ const CourseDetail = () => {
                 </button>
               </div>
 
-              <div className="mb-6">
-                <h3 className="font-semibold text-gray-900 mb-2">
-                  {course.title}
-                </h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  {course.description}
-                </p>
+              <div className="mb-4">
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Course Price</span>
@@ -490,34 +447,70 @@ const CourseDetail = () => {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-900 mb-2">
-                    What's included:
-                  </h4>
-                  <ul className="text-sm text-blue-800 space-y-1">
-                    <li>• Lifetime access to course videos</li>
-                    <li>• Downloadable resources</li>
-                    <li>• Certificate of completion</li>
-                    <li>• 24/7 support</li>
-                  </ul>
-                </div>
+              {!receipt ? (
+                <div className="space-y-4">
+                  <button
+                    onClick={handleInitiateUpi}
+                    className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
+                  >
+                    Pay via UPI
+                  </button>
 
-                <div className="flex gap-3">
+                  <div className="border rounded-lg p-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Enter UTR / Transaction ID
+                    </label>
+                    <input
+                      type="text"
+                      value={utrNumber}
+                      onChange={(e) => setUtrNumber(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none"
+                      placeholder="e.g., 1234567890"
+                    />
+                    <button
+                      onClick={handleSubmitUtr}
+                      disabled={submittingUtr || !utrNumber}
+                      className="mt-3 w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {submittingUtr ? "Submitting..." : "Submit for Verification"}
+                    </button>
+                    <p className="text-xs text-gray-500 mt-2">
+                      After UPI payment, paste your UTR here. Access will be granted after admin verification.
+                    </p>
+                  </div>
+
                   <button
                     onClick={() => setShowEnrollmentModal(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
+                    className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
                   >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handlePayment}
-                    className="flex-1 px-4 py-2 bg-yellow-400 text-gray-900 rounded-lg font-medium hover:bg-yellow-500"
-                  >
-                    Pay & Enroll
+                    Close
                   </button>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-yellow-900 mb-1">Payment Submitted</h3>
+                    <p className="text-sm text-yellow-800">
+                      Your payment is under verification. Within 24 hours, you’ll get access to your course.
+                    </p>
+                  </div>
+                  <div className="text-sm bg-gray-50 rounded-lg p-4">
+                    <div className="flex justify-between"><span className="text-gray-600">Receipt (UTR):</span><span className="font-medium">{receipt.utrNumber}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-600">Name:</span><span className="font-medium">{receipt.name}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-600">Email:</span><span className="font-medium">{receipt.email}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-600">Phone:</span><span className="font-medium">{receipt.phone}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-600">Course:</span><span className="font-medium">{receipt.course}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-600">Amount:</span><span className="font-medium">₹{receipt.amount}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-600">Status:</span><span className="font-medium capitalize">{receipt.status}</span></div>
+                  </div>
+                  <button
+                    onClick={() => setShowEnrollmentModal(false)}
+                    className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

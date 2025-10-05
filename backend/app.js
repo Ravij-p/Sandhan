@@ -7,7 +7,6 @@ const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 const moment = require("moment");
-const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const PDFDocument = require("pdfkit");
 const User = require("./models/User");
@@ -20,17 +19,15 @@ const authRoutes = require("./routes/auth");
 const courseRoutes = require("./routes/courses");
 const adminRoutes = require("./routes/admin");
 const paymentRoutes = require("./routes/payments");
+const upiPaymentRoutes = require("./routes/upiPayments");
 const testSeriesRoutes = require("./routes/testSeries");
 const documentRoutes = require("./routes/documents");
+const adminHomepageAdsRoutes = require("./routes/adminHomepageAds");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 app.use(express.json());
-// Initialize Razorpay
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_SECRET,
-});
+// Razorpay removed; using UPI manual verification flow
 
 // MongoDB Connection
 const connectDB = async () => {
@@ -74,153 +71,10 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/test-series", testSeriesRoutes);
 app.use("/api/documents", documentRoutes);
+app.use("/api/homepage-ads", adminHomepageAdsRoutes);
+app.use("/api/upi-payments", upiPaymentRoutes);
 
-// Legacy payment routes (keep for backward compatibility)
-// Create Razorpay Order
-app.post("/api/create-order", async (req, res) => {
-  console.log("---- /api/create-order hit ----");
-  console.log("Headers:", req.headers);
-  console.log("Body:", req.body);
-
-  const { amount, name, mobile, course } = req.body;
-
-  // Validation
-  if (!name || !amount || !mobile || !course) {
-    return res.status(400).json({
-      error: "All fields are required: name, amount, mobile, course",
-    });
-  }
-
-  if (amount <= 0) {
-    return res.status(400).json({
-      error: "Amount must be greater than 0",
-    });
-  }
-
-  try {
-    // Check if user already exists
-    console.log("Incoming request body:", req.body);
-
-    const existingUser = await User.findOne({ mobile });
-    if (existingUser) {
-      return res.status(400).json({
-        error:
-          "Mobile number already registered. Duplicate payments not allowed.",
-      });
-    }
-
-    // Create Razorpay order
-    const options = {
-      amount: amount * 100, // Razorpay expects amount in paise
-      currency: "INR",
-      receipt: `receipt_${Date.now()}`,
-      notes: {
-        name,
-        mobile,
-        course,
-      },
-    };
-
-    const order = await razorpay.orders.create(options);
-
-    res.json({
-      orderId: order.id,
-      amount: order.amount,
-      currency: order.currency,
-      key: process.env.RAZORPAY_KEY_ID,
-    });
-  } catch (err) {
-    console.error("Order creation error:", err);
-    res.status(500).json({
-      error: "Failed to create payment order",
-    });
-  }
-});
-
-// Verify Razorpay Payment and Generate Receipt
-app.post("/api/verify-payment", async (req, res) => {
-  const {
-    razorpay_order_id,
-    razorpay_payment_id,
-    razorpay_signature,
-    name,
-    mobile,
-    course,
-    amount,
-  } = req.body;
-
-  try {
-    // Verify payment signature
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_SECRET)
-      .update(body.toString())
-      .digest("hex");
-
-    if (expectedSignature !== razorpay_signature) {
-      return res.status(400).json({
-        error: "Payment verification failed",
-      });
-    }
-
-    // Payment verified successfully, now save to database
-    // Generate unique receipt number
-    const receiptNumber = `SDN${moment().format("YYYYMM")}${Math.floor(
-      Math.random() * 10000
-    )
-      .toString()
-      .padStart(4, "0")}`;
-
-    // Create user record (legacy)
-    const userData = {
-      name: name.trim(),
-      mobile: mobile.trim(),
-      course: course.trim(),
-      amount: parseFloat(amount) / 100, // Convert back from paise
-      receiptNumber,
-      paymentDate: new Date(),
-      paymentStatus: "paid",
-      razorpayOrderId: razorpay_order_id,
-      razorpayPaymentId: razorpay_payment_id,
-    };
-
-    const user = new User(userData);
-    await user.save();
-
-    // TODO: Integrate with new Student model
-    // This will be handled in the new payment flow
-
-    const receiptId = `receipt_SDN${new Date()
-      .toISOString()
-      .replace(/[-:TZ.]/g, "")
-      .slice(0, 12)}_${Date.now()}`;
-
-    const downloadUrl = `/api/receipt/${receiptNumber}`;
-
-    // Send success response with receipt download link
-    res.json({
-      success: true,
-      message: "Payment verified and receipt generated",
-      receiptNumber,
-      downloadUrl,
-    });
-    console.log("Payment verified", downloadUrl);
-  } catch (err) {
-    console.error("Payment verification error:", err);
-
-    if (err.code === 11000) {
-      if (err.keyPattern && err.keyPattern.mobile) {
-        return res.status(400).json({
-          error: "Mobile number already registered",
-        });
-      }
-    }
-
-    res.status(500).json({
-      error: "Payment verification failed. Please contact support.",
-    });
-  }
-});
+// Legacy Razorpay endpoints removed
 
 app.get("/api/receipt/:receiptNumber", async (req, res) => {
   try {
@@ -551,10 +405,8 @@ app.get("/api/health", (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server started on port ${PORT}`);
   console.log(`📊 API Documentation:`);
-  console.log(`   POST /api/create-order - Create Razorpay payment order`);
-  console.log(
-    `   POST /api/verify-payment - Verify payment and generate receipt`
-  );
+  console.log(`   POST /api/upi-payments/initiate - Get UPI intent URL`);
+  console.log(`   POST /api/upi-payments/submit-utr - Submit UTR for verification`);
   console.log(`   GET  /api/download-receipt/:filename - Download PDF receipt`);
   console.log(
     `   POST /api/payment-direct - Direct payment (without Razorpay)`
@@ -562,5 +414,6 @@ app.listen(PORT, () => {
   console.log(`   GET  /api/export/excel - Generate course-wise Excel report`);
   console.log(`   GET  /api/stats - Get payment statistics`);
   console.log(`   GET  /api/payments - Get all payments (with pagination)`);
+  console.log(`   GET  /api/homepage-ads/public/active - Active homepage ads`);
   console.log(`   GET  /api/health - Health check`);
 });

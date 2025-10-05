@@ -32,6 +32,7 @@ import VideoPlayer from "./components/courses/VideoPlayer";
 import AdminCoursePage from "./components/admin/AdminCoursePage";
 import CreateCoursePage from "./components/admin/CreateCoursePage";
 import AdminTestSeriesManagement from "./components/admin/AdminTestSeriesManagement";
+import AdminUpiApprovals from "./components/admin/AdminUpiApprovals";
 const AppContent = () => {
   const [isCoursesDropdownOpen, setIsCoursesDropdownOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -40,6 +41,7 @@ const AppContent = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
+  const [ads, setAds] = useState([]);
   const navigate = useNavigate();
   const { isAuthenticated, isStudent, isAdmin, logout } = useAuth();
   useEffect(() => {
@@ -79,6 +81,16 @@ const AppContent = () => {
     };
 
     fetchCourses();
+    const fetchAds = async () => {
+      try {
+        const res = await fetch(`${process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api"}/homepage-ads/public/active`);
+        const data = await res.json();
+        if (data.success) setAds(data.ads);
+      } catch (e) {
+        // ignore
+      }
+    };
+    fetchAds();
   }, []);
   const Navigation = () => (
     <nav className="fixed top-0 left-0 right-0 z-40 bg-[#f9dc41] shadow-md px-4 mt-20 sm:mt-14 lg:mt-8">
@@ -484,6 +496,22 @@ const AppContent = () => {
         // </div>
       }
       <CardSlider />
+      {/* Homepage Ads from DB */}
+      {ads.length > 0 && (
+        <div className="py-8" style={{ backgroundColor: "#fafaee" }}>
+          <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {ads.map((ad) => (
+              <a key={ad._id} href={ad.redirectUrl} className="bg-white rounded-xl shadow hover:shadow-lg transition p-4 block">
+                <img src={ad.imageUrl} alt={ad.title} className="w-full h-40 object-cover rounded" />
+                <h3 className="mt-3 font-semibold text-gray-900">{ad.title}</h3>
+                {ad.description && (
+                  <p className="text-sm text-gray-600 line-clamp-2">{ad.description}</p>
+                )}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
       <StaticCourseCards />
     </div>
   );
@@ -536,6 +564,14 @@ const AppContent = () => {
           element={
             <ProtectedRoute requireAdmin={true}>
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/approvals"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminUpiApprovals />
             </ProtectedRoute>
           }
         />

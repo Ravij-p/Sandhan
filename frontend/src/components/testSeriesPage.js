@@ -43,72 +43,14 @@ export const TestSeriesPage = () => {
     try {
       const token = localStorage.getItem("token");
 
-      // Create payment order
-      const orderResponse = await axios.post(
-        `${API_BASE_URL}/payments/test-series/create-order`,
-        { testSeriesId },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (orderResponse.data.success) {
-        const { orderId, amount, key, testSeries } = orderResponse.data;
-
-        // Initialize Razorpay
-        const options = {
-          key: key,
-          amount: amount,
-          currency: "INR",
-          name: "Sandhan Academy",
-          description: `Test Series: ${testSeries.title}`,
-          order_id: orderId,
-          handler: async function (response) {
-            try {
-              // Verify payment
-              const verifyResponse = await axios.post(
-                `${API_BASE_URL}/payments/test-series/verify-payment`,
-                {
-                  ...response,
-                  testSeriesId: testSeriesId,
-                },
-                {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
-                }
-              );
-
-              if (verifyResponse.data.success) {
-                alert("✅ Test series purchased successfully!");
-                // Refresh test series to show updated status
-                fetchTestSeries();
-              } else {
-                alert("❌ Payment verification failed");
-              }
-            } catch (error) {
-              console.error("Payment verification error:", error);
-              alert("❌ Payment verification failed");
-            }
-          },
-          prefill: {
-            name: "Student",
-            email: "student@example.com",
-            contact: "9999999999",
-          },
-          notes: {
-            address: "Test Series Purchase",
-          },
-          theme: {
-            color: "#163233",
-          },
-        };
-
-        const razorpay = new window.Razorpay(options);
-        razorpay.open();
-      }
+      // Redirect to UPI and accept manual verification for test series
+      const pa = process.env.REACT_APP_UPI_VPA || "xyz@xyz";
+      const pn = process.env.REACT_APP_UPI_NAME || "Sandhan Institute";
+      const series = testSeries.find((t) => t._id === testSeriesId);
+      const amount = series?.price || 0;
+      const params = new URLSearchParams({ pa, pn, am: String(amount), cu: "INR", tn: `Test Series ${series?.title || "Payment"}` });
+      window.location.href = `upi://pay?${params.toString()}`;
+      alert("After payment, please contact support with your UTR for test series access.");
     } catch (error) {
       console.error("Purchase error:", error);
       alert("❌ Failed to initiate purchase. Please try again.");
