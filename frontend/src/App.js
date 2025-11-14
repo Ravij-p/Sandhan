@@ -430,41 +430,112 @@ const AppContent = () => {
       </div>
     );
   };
-  const StaticCourseCards = () => (
-    <div className="py-16" style={{ backgroundColor: "#fafaee" }}>
-      <div className="container mx-auto px-4">
-        <h2
-          className="text-3xl font-bold text-center mb-12"
-          style={{ color: "#163233" }}
-        >
-          Our Courses
-        </h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {courseCards.map((course) => (
-            <div
-              key={course.id}
-              onClick={() => navigate(course.route)}
-              className={`${course.color} p-6 rounded-xl shadow-lg hover:shadow-xl cursor-pointer transform hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-yellow-400`}
+  const CourseCards = () => {
+    // Use real courses from database, fallback to static if loading or empty
+    const displayCourses = courses.length > 0 ? courses.slice(0, 6) : (loadingCourses ? [] : courseCards);
+    const isFromDB = courses.length > 0;
+
+    if (loadingCourses && courses.length === 0) {
+      return (
+        <div className="py-16" style={{ backgroundColor: "#fafaee" }}>
+          <div className="container mx-auto px-4">
+            <h2
+              className="text-3xl font-bold text-center mb-12"
+              style={{ color: "#163233" }}
             >
-              <h3
-                className="text-xl font-bold mb-3"
-                style={{ color: "#163233" }}
-              >
-                {course.title}
-              </h3>
-              <p className="text-gray-700 mb-4">{course.description}</p>
-              <button
-                className="px-4 py-2 rounded-lg font-medium transition-colors hover:shadow-md"
-                style={{ backgroundColor: "#f9dc41", color: "#163233" }}
-              >
-                Explore Course
-              </button>
+              Our Courses
+            </h2>
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
             </div>
-          ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="py-16" style={{ backgroundColor: "#fafaee" }}>
+        <div className="container mx-auto px-4">
+          <h2
+            className="text-3xl font-bold text-center mb-12"
+            style={{ color: "#163233" }}
+          >
+            Our Courses
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {displayCourses.map((course) => {
+              // Handle both DB courses and static courseCards
+              if (isFromDB) {
+                const categoryColors = {
+                  gpsc: "bg-purple-100",
+                  upsc: "bg-red-100",
+                  ssc: "bg-blue-100",
+                  neet11: "bg-green-100",
+                  neet12: "bg-teal-100",
+                  talati: "bg-orange-100",
+                  ethics: "bg-indigo-100",
+                };
+                const courseColor = categoryColors[course.category] || "bg-gray-100";
+
+                return (
+                  <div
+                    key={course._id}
+                    onClick={() => navigate(`/course/${course._id}`)}
+                    className={`${courseColor} p-6 rounded-xl shadow-lg hover:shadow-xl cursor-pointer transform hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-yellow-400`}
+                  >
+                    <h3
+                      className="text-xl font-bold mb-3"
+                      style={{ color: "#163233" }}
+                    >
+                      {course.title}
+                    </h3>
+                    <p className="text-gray-700 mb-4 line-clamp-3">
+                      {course.description}
+                    </p>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-lg font-semibold" style={{ color: "#163233" }}>
+                        ₹{course.price.toLocaleString()}
+                      </span>
+                      <span className="text-sm text-gray-600">{course.duration}</span>
+                    </div>
+                    <button
+                      className="px-4 py-2 rounded-lg font-medium transition-colors hover:shadow-md w-full"
+                      style={{ backgroundColor: "#f9dc41", color: "#163233" }}
+                    >
+                      Explore Course
+                    </button>
+                  </div>
+                );
+              } else {
+                // Static fallback
+                return (
+                  <div
+                    key={course.id}
+                    onClick={() => navigate(course.route)}
+                    className={`${course.color} p-6 rounded-xl shadow-lg hover:shadow-xl cursor-pointer transform hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-yellow-400`}
+                  >
+                    <h3
+                      className="text-xl font-bold mb-3"
+                      style={{ color: "#163233" }}
+                    >
+                      {course.title}
+                    </h3>
+                    <p className="text-gray-700 mb-4">{course.description}</p>
+                    <button
+                      className="px-4 py-2 rounded-lg font-medium transition-colors hover:shadow-md"
+                      style={{ backgroundColor: "#f9dc41", color: "#163233" }}
+                    >
+                      Explore Course
+                    </button>
+                  </div>
+                );
+              }
+            })}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const HomePage = () => (
     <div className="pt-40 sm:pt-36 md:pt-32 lg:pt-28">
@@ -504,7 +575,7 @@ const AppContent = () => {
           </div>
         </div>
       )}
-      <StaticCourseCards />
+      <CourseCards />
     </div>
   );
 

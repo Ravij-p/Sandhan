@@ -18,6 +18,8 @@ import {
   RefreshCw,
   Video,
   Settings,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import axios from "axios";
 import { QRCodeCanvas } from "qrcode.react";
@@ -51,6 +53,11 @@ const CourseManagement = () => {
   const [deletingCourse, setDeletingCourse] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
+  const [enrollmentCounts, setEnrollmentCounts] = useState({});
+  const [expandedCourses, setExpandedCourses] = useState({});
+  const [showStudentsModal, setShowStudentsModal] = useState(false);
+  const [courseStudents, setCourseStudents] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
 
   // Cloudinary Upload State for materials (video/pdf)
   const [materialTitle, setMaterialTitle] = useState("");
@@ -116,6 +123,30 @@ const CourseManagement = () => {
     }
   };
 
+  const fetchEnrollmentCount = async (courseId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/admin/courses/${courseId}/enrollment-count`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.data.success) {
+        setEnrollmentCounts(prev => ({
+          ...prev,
+          [courseId]: response.data.enrollmentCount
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching enrollment count:", error);
+      // Set to 0 if fetch fails
+      setEnrollmentCounts(prev => ({
+        ...prev,
+        [courseId]: 0
+      }));
+    }
+  };
+
   const fetchCourses = useCallback(async (showRefresh = false) => {
     try {
       if (showRefresh) setRefreshing(true);
@@ -129,6 +160,11 @@ const CourseManagement = () => {
       });
       setCourses(response.data.courses);
       setError("");
+      
+      // Fetch enrollment counts for all courses
+      response.data.courses.forEach((course) => {
+        fetchEnrollmentCount(course._id);
+      });
     } catch (error) {
       console.error("Error fetching courses:", error);
       setError("Failed to load courses");
@@ -264,6 +300,31 @@ const CourseManagement = () => {
     setShowVideosModal(true);
   };
 
+  const handleViewStudents = async (course) => {
+    setSelectedCourse(course);
+    setLoadingStudents(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `${API_BASE_URL}/admin/courses/${course._id}/students`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      if (response.data.success) {
+        setCourseStudents(response.data.students);
+        setShowStudentsModal(true);
+      }
+    } catch (error) {
+      console.error("Error fetching course students:", error);
+      showNotification("Failed to load students", "error");
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
   const handleDeleteVideo = async (courseId, videoId) => {
     if (
       !window.confirm(
@@ -369,101 +430,182 @@ const CourseManagement = () => {
           </div>
         )}
 
-        {/* Courses Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course) => (
-            <div
-              key={course._id}
-              className="bg-white rounded-lg shadow-md overflow-hidden"
-            >
-              {/* Course Image */}
-              <div className="h-48 bg-gradient-to-br from-blue-500 to-purple-600 relative">
-                {course.thumbnail ? (
-                  <img
-                    src={course.thumbnail}
-                    alt={course.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <BookOpen className="w-16 h-16 text-white opacity-80" />
+        {/* Courses Accordion */}
+        <div className="space-y-4">
+          {courses.map((course) => {
+            const isExpanded = expandedCourses[course._id];
+            return (
+              <div
+                key={course._id}
+                className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 transition-all duration-300 hover:shadow-lg"
+              >
+                {/* Course Header - Clickable */}
+                <div
+                  onClick={() => {
+                    setExpandedCourses(prev => ({
+                      ...prev,
+                      [course._id]: !prev[course._id]
+                    }));
+                  }}
+                  className="p-6 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full whitespace-nowrap">
+                          {course.category.toUpperCase()}
+                        </span>
+                        <span className="text-sm text-gray-600 whitespace-nowrap">
+                          {course.videoCount || 0} videos
+                        </span>
+                        <div className="flex items-center text-sm text-gray-600 whitespace-nowrap">
+                          <Users size={14} className="mr-1" />
+                          <span>{enrollmentCounts[course._id] ?? 0} students</span>
+                        </div>
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">
+                        {course.title}
+                      </h3>
+                      <p className="text-gray-600 text-sm line-clamp-2">
+                        {course.description}
+                      </p>
+                    </div>
+                    <button className="ml-4 p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                      {isExpanded ? (
+                        <ChevronUp size={24} className="text-gray-600" />
+                      ) : (
+                        <ChevronDown size={24} className="text-gray-600" />
+                      )}
+                    </button>
                   </div>
-                )}
-                <div className="absolute top-4 right-4 bg-white bg-opacity-90 rounded-full px-3 py-1">
-                  <span className="text-sm font-semibold text-gray-800">
-                    ₹{course.price.toLocaleString()}
-                  </span>
+                </div>
+
+                {/* Collapsible Content */}
+                <div
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                    isExpanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
+                  }`}
+                >
+                  <div className="px-6 pb-6 border-t border-gray-200 pt-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                      {/* Course Details */}
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-700 mb-2">Course Information</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center text-gray-600">
+                              <DollarSign size={16} className="mr-2" />
+                              <span>Price: ₹{course.price.toLocaleString()}</span>
+                            </div>
+                            <div className="flex items-center text-gray-600">
+                              <Calendar size={16} className="mr-2" />
+                              <span>Duration: {course.duration}</span>
+                            </div>
+                            <div className="flex items-center text-gray-600">
+                              <Clock size={16} className="mr-2" />
+                              <span>Created: {new Date(course.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center text-gray-600">
+                              <CheckCircle size={16} className={`mr-2 ${course.isActive ? 'text-green-600' : 'text-red-600'}`} />
+                              <span>Status: {course.isActive ? 'Active' : 'Inactive'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Course Image */}
+                      <div className="flex justify-center items-center">
+                        <div className="relative w-full max-w-xs h-48 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg overflow-hidden">
+                          {course.thumbnail ? (
+                            <img
+                              src={course.thumbnail}
+                              alt={course.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex items-center justify-center h-full">
+                              <BookOpen className="w-16 h-16 text-white opacity-80" />
+                            </div>
+                          )}
+                          <div className="absolute top-4 right-4 bg-white bg-opacity-90 rounded-full px-3 py-1">
+                            <span className="text-sm font-semibold text-gray-800">
+                              ₹{course.price.toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewVideos(course);
+                        }}
+                        className="flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                      >
+                        <Play size={16} />
+                        <span>View Videos</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCourse(course);
+                          setShowVideoModal(true);
+                        }}
+                        className="flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                      >
+                        <Upload size={16} />
+                        <span>Add Video</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // TODO: Implement edit functionality
+                          showNotification("Edit functionality coming soon", "info");
+                        }}
+                        className="flex items-center justify-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                      >
+                        <Edit size={16} />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewStudents(course);
+                        }}
+                        className="flex items-center justify-center space-x-2 px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium"
+                      >
+                        <Users size={16} />
+                        <span>View Students</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCourse(course._id);
+                        }}
+                        disabled={deletingCourse === course._id}
+                        className="flex items-center justify-center space-x-2 px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 disabled:opacity-50 transition-colors text-sm font-medium"
+                      >
+                        {deletingCourse === course._id ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" />
+                            <span>Deleting...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 size={16} />
+                            <span>Delete</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              {/* Course Content */}
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                    {course.category.toUpperCase()}
-                  </span>
-                  <span className="text-sm text-gray-600">
-                    {course.videoCount || 0} videos
-                  </span>
-                </div>
-
-                <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
-                  {course.title}
-                </h3>
-
-                <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                  {course.description}
-                </p>
-
-                {/* Course Stats */}
-                <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                  <div className="flex items-center text-gray-600">
-                    <Calendar size={16} className="mr-1" />
-                    <span>{course.duration}</span>
-                  </div>
-                  <div className="flex items-center text-gray-600">
-                    <Users size={16} className="mr-1" />
-                    <span>50 students</span>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleViewVideos(course)}
-                    className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
-                  >
-                    <Play size={16} />
-                    <span>View Videos</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedCourse(course);
-                      setShowVideoModal(true);
-                    }}
-                    className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
-                  >
-                    <Upload size={16} />
-                    <span>Add Video</span>
-                  </button>
-                  <button className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-                    <Edit size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteCourse(course._id)}
-                    disabled={deletingCourse === course._id}
-                    className="px-3 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 disabled:opacity-50"
-                  >
-                    {deletingCourse === course._id ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : (
-                      <Trash2 size={16} />
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Create Course Modal */}
@@ -892,6 +1034,105 @@ const CourseManagement = () => {
                     <p className="text-xs text-gray-500">Uploads use Cloudinary; URLs are stored in course materials.</p>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Students List Modal */}
+        {showStudentsModal && selectedCourse && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">
+                      Students Enrolled in {selectedCourse.title}
+                    </h2>
+                    <p className="text-sm text-gray-600">
+                      {courseStudents.length} student{courseStudents.length !== 1 ? 's' : ''} enrolled
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowStudentsModal(false);
+                      setSelectedCourse(null);
+                      setCourseStudents([]);
+                    }}
+                    className="text-gray-500 hover:text-gray-700 text-2xl"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {loadingStudents ? (
+                  <div className="flex justify-center items-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                  </div>
+                ) : courseStudents.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Name
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Email
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Mobile
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Enrolled Date
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Receipt
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Amount
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {courseStudents.map((student) => (
+                            <tr key={student._id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {student.name}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                {student.email}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                {student.mobile}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                {new Date(student.enrolledAt).toLocaleDateString()}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                {student.receiptNumber || 'N/A'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                {student.amount ? `₹${student.amount.toLocaleString()}` : 'N/A'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Users className="mx-auto text-gray-400 w-12 h-12 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No students enrolled
+                    </h3>
+                    <p className="text-gray-600">
+                      No students have enrolled in this course yet.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -267,6 +267,93 @@ router.get(
   }
 );
 
+// Get enrollment count for a specific course
+router.get(
+  "/courses/:courseId/enrollment-count",
+  verifyToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { courseId } = req.params;
+
+      // Count students enrolled in this course with paid status
+      const enrollmentCount = await Student.countDocuments({
+        "enrolledCourses.course": courseId,
+        "enrolledCourses.paymentStatus": "paid",
+        isActive: true,
+      });
+
+      res.json({
+        success: true,
+        enrollmentCount,
+      });
+    } catch (error) {
+      console.error("Fetch enrollment count error:", error);
+      res.status(500).json({ error: "Failed to fetch enrollment count" });
+    }
+  }
+);
+
+// Get students enrolled in a specific course
+router.get(
+  "/courses/:courseId/students",
+  verifyToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { courseId } = req.params;
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 50;
+
+      // Find students enrolled in this course
+      const students = await Student.find({
+        "enrolledCourses.course": courseId,
+        "enrolledCourses.paymentStatus": "paid",
+        isActive: true,
+      })
+        .select("name email mobile enrolledCourses createdAt")
+        .sort({ createdAt: -1 })
+        .limit(limit * 1)
+        .skip((page - 1) * limit);
+
+      // Get enrollment details for each student
+      const studentsWithEnrollment = students.map(student => {
+        const enrollment = student.enrolledCourses.find(
+          e => e.course.toString() === courseId && e.paymentStatus === "paid"
+        );
+        return {
+          _id: student._id,
+          name: student.name,
+          email: student.email,
+          mobile: student.mobile,
+          enrolledAt: enrollment?.enrolledAt || student.createdAt,
+          receiptNumber: enrollment?.receiptNumber,
+          amount: enrollment?.amount,
+        };
+      });
+
+      const total = await Student.countDocuments({
+        "enrolledCourses.course": courseId,
+        "enrolledCourses.paymentStatus": "paid",
+        isActive: true,
+      });
+
+      res.json({
+        success: true,
+        students: studentsWithEnrollment,
+        pagination: {
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+          totalRecords: total,
+        },
+      });
+    } catch (error) {
+      console.error("Fetch course students error:", error);
+      res.status(500).json({ error: "Failed to fetch course students" });
+    }
+  }
+);
+
 // Get payment history
 router.get("/payments", verifyToken, requireAdmin, async (req, res) => {
   try {

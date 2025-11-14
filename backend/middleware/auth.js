@@ -41,9 +41,9 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
-// Middleware to check if user is student
+// Middleware to check if user is student (admin can also access)
 const requireStudent = (req, res, next) => {
-  if (req.userType !== "student") {
+  if (req.userType !== "student" && req.userType !== "admin") {
     return res.status(403).json({ error: "Access denied. Student privileges required." });
   }
   next();

@@ -112,10 +112,34 @@ router.get("/:id", async (req, res) => {
 router.get("/:id/videos", verifyToken, requireStudent, async (req, res) => {
   try {
     const courseId = req.params.id;
-    const studentId = req.user._id;
+    const userId = req.user._id;
+    const userType = req.userType;
+
+    // Admin has access to all courses
+    if (userType === "admin") {
+      const course = await Course.findById(courseId);
+      const videos = await Video.find({
+        course: courseId,
+        isActive: true,
+      }).sort({ order: 1 });
+
+      return res.json({
+        success: true,
+        course: {
+          _id: course._id,
+          title: course.title,
+          description: course.description,
+        },
+        videos,
+      });
+    }
 
     // Check if student is enrolled in this course
-    const student = await Student.findById(studentId);
+    const student = await Student.findById(userId);
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
     const isEnrolled = student.enrolledCourses.some(
       (enrollment) =>
         enrollment.course.toString() === courseId &&
@@ -131,6 +155,10 @@ router.get("/:id/videos", verifyToken, requireStudent, async (req, res) => {
 
     // Get course with videos
     const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
     const videos = await Video.find({
       course: courseId,
       isActive: true,
@@ -155,9 +183,23 @@ router.get("/:id/videos", verifyToken, requireStudent, async (req, res) => {
 router.get("/:id/materials", verifyToken, requireStudent, async (req, res) => {
   try {
     const courseId = req.params.id;
-    const studentId = req.user._id;
+    const userId = req.user._id;
+    const userType = req.userType;
 
-    const student = await Student.findById(studentId);
+    // Admin has access to all courses
+    if (userType === "admin") {
+      const course = await Course.findById(courseId).select("materials title");
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+      return res.json({ success: true, materials: course.materials || [] });
+    }
+
+    const student = await Student.findById(userId);
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
     const isEnrolled = student.enrolledCourses.some(
       (enrollment) =>
         enrollment.course.toString() === courseId &&
@@ -191,10 +233,41 @@ router.get(
   async (req, res) => {
     try {
       const { courseId, videoId } = req.params;
-      const studentId = req.user._id;
+      const userId = req.user._id;
+      const userType = req.userType;
+
+      // Admin has access to all videos
+      if (userType === "admin") {
+        const video = await Video.findOne({
+          _id: videoId,
+          course: courseId,
+          isActive: true,
+        });
+
+        if (!video) {
+          return res.status(404).json({ error: "Video not found" });
+        }
+
+        return res.json({
+          success: true,
+          video: {
+            _id: video._id,
+            title: video.title,
+            description: video.description,
+            duration: video.duration,
+            order: video.order,
+            videoUrl: video.videoUrl,
+            thumbnail: video.thumbnail,
+          },
+        });
+      }
 
       // Check if student is enrolled in this course
-      const student = await Student.findById(studentId);
+      const student = await Student.findById(userId);
+      if (!student) {
+        return res.status(404).json({ error: "Student not found" });
+      }
+
       const isEnrolled = student.enrolledCourses.some(
         (enrollment) =>
           enrollment.course.toString() === courseId &&
