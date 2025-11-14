@@ -1,4 +1,4 @@
-# Environment Configuration for Sandhan App
+# Environment Configuration for Tushti IAS App
 
 Create a `.env` file in the `backend` directory with the following variables:
 
@@ -6,7 +6,7 @@ Create a `.env` file in the `backend` directory with the following variables:
 
 ```env
 # Database Configuration
-MONGO_URI=mongodb://localhost:27017/sandhan_app
+MONGO_URI=mongodb://localhost:27017/trushtiias_app
 
 # JWT Configuration
 JWT_SECRET=your_super_secret_jwt_key_here_make_it_long_and_secure
@@ -38,7 +38,7 @@ EMAIL_USER=your_email@gmail.com
 EMAIL_PASS=your_app_password
 
 # Admin Configuration (for initial setup)
-DEFAULT_ADMIN_EMAIL=admin@sandhan.com
+DEFAULT_ADMIN_EMAIL=admin@trushtiias.com
 DEFAULT_ADMIN_PASSWORD=admin123
 
 # Security Configuration

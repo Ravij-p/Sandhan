@@ -27,12 +27,12 @@ router.post("/initiate", verifyToken, requireStudent, async (req, res) => {
     }
 
     const pa = process.env.UPI_VPA || "xyz@xyz";
-    const pn = process.env.UPI_NAME || "Sandhan Institute";
+    const pn = process.env.UPI_NAME || "Tushti IAS";
     const upiUrl = buildUpiUrl({
       pa,
       pn,
       am: course.price,
-      tn: `Course Payment ${course.title}`,
+      tn: `Payment for ${course.title} - ${req.user.email || "student"}`,
     });
 
     res.json({

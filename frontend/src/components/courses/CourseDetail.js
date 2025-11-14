@@ -12,7 +12,9 @@ import {
   CheckCircle,
   Download,
   Share2,
+  X,
 } from "lucide-react";
+import { QRCodeCanvas } from "qrcode.react";
 import axios from "axios";
 
 const CourseDetail = () => {
@@ -21,13 +23,13 @@ const CourseDetail = () => {
   const { user, isAuthenticated, isStudent } = useAuth();
   const [course, setCourse] = useState(null);
   const [videos, setVideos] = useState([]);
+  const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
   const [upiUrl, setUpiUrl] = useState("");
-  const [utrNumber, setUtrNumber] = useState("");
-  const [submittingUtr, setSubmittingUtr] = useState(false);
+  const [showQrCode, setShowQrCode] = useState(false);
   const [receipt, setReceipt] = useState(null);
 
   const API_BASE_URL =
@@ -71,6 +73,7 @@ const CourseDetail = () => {
 
       if (enrolled) {
         fetchVideos();
+        fetchMaterials();
       }
     } catch (error) {
       // ignore
@@ -94,13 +97,52 @@ const CourseDetail = () => {
     }
   };
 
+  const fetchMaterials = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `${API_BASE_URL}/courses/${courseId}/materials`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.data.success) {
+        setMaterials(response.data.materials || []);
+      }
+    } catch (error) {
+      // ignore
+    }
+  };
+
   const handleEnroll = () => {
     if (!isAuthenticated) {
       alert("Please login to enroll in this course");
       return;
     }
     setShowEnrollmentModal(true);
+    // Build UPI URL from course payment config or fallback to course price
+    let upi = "";
+    if (course?.payment?.upiLink) {
+      upi = course.payment.upiLink
+        .replace("{course_amount}", String(course.price || 0))
+        .replace("{course}", encodeURIComponent(course.title || "Course"))
+        .replace(
+          "{student_email}",
+          encodeURIComponent(user?.email || "student@tushtiias.com")
+        );
+    } else {
+      const pa = "merchant@upi";
+      const pn = "TushtiIAS";
+      const am = String(course.price || 0);
+      upi = `upi://pay?pa=${pa}&pn=${pn}&am=${am}&cu=INR`;
+    }
+    setUpiUrl(upi);
+    setShowQrCode(true);
   };
+
+  const isMobile = () => /Mobi|Android/i.test(navigator.userAgent);
 
   const handleInitiateUpi = async () => {
     if (!isAuthenticated || !isStudent) {
@@ -116,34 +158,20 @@ const CourseDetail = () => {
       );
       if (res.data.success) {
         setUpiUrl(res.data.upiUrl);
-        window.location.href = res.data.upiUrl;
+
+        if (isMobile()) {
+          // Mobile: Open UPI app directly
+          window.location.href = res.data.upiUrl;
+        } else {
+          // Desktop: Show QR code
+          setShowQrCode(true);
+        }
       }
     } catch (e) {
       alert("Failed to initiate UPI payment");
     }
   };
 
-  const handleSubmitUtr = async () => {
-    if (!utrNumber || !courseId) return;
-    try {
-      setSubmittingUtr(true);
-      const token = localStorage.getItem("token");
-      const res = await axios.post(
-        `${API_BASE_URL}/upi-payments/submit-utr`,
-        { courseId, utrNumber },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (res.data.success) {
-        setReceipt(res.data.receipt);
-      }
-    } catch (e) {
-      alert(
-        e?.response?.data?.error || "Failed to submit UTR. Please check and retry."
-      );
-    } finally {
-      setSubmittingUtr(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -173,7 +201,7 @@ const CourseDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-32 sm:pt-28 md:pt-24 lg:pt-20">
+    <div className="min-h-screen bg-gray-50 pt-40 sm:pt-36 md:pt-32 lg:pt-28">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -194,14 +222,7 @@ const CourseDetail = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <button className="p-2 hover:bg-gray-100 rounded-lg">
-                <Share2 size={20} />
-              </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg">
-                <Download size={20} />
-              </button>
-            </div>
+            <div className="flex items-center space-x-2"></div>
           </div>
         </div>
       </div>
@@ -413,7 +434,7 @@ const CourseDetail = () => {
                 </div>
                 <div>
                   <h4 className="font-medium text-gray-900">Expert Faculty</h4>
-                  <p className="text-sm text-gray-600">Sandhan Institute</p>
+                  <p className="text-sm text-gray-600">Tushti IAS</p>
                 </div>
               </div>
             </div>
@@ -446,39 +467,17 @@ const CourseDetail = () => {
                   </div>
                 </div>
               </div>
-
               {!receipt ? (
                 <div className="space-y-4">
                   <button
                     onClick={handleInitiateUpi}
                     className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
                   >
-                    Pay via UPI
+                    {isMobile() ? "Pay via UPI" : "Generate QR Code"}
                   </button>
-
-                  <div className="border rounded-lg p-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Enter UTR / Transaction ID
-                    </label>
-                    <input
-                      type="text"
-                      value={utrNumber}
-                      onChange={(e) => setUtrNumber(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none"
-                      placeholder="e.g., 1234567890"
-                    />
-                    <button
-                      onClick={handleSubmitUtr}
-                      disabled={submittingUtr || !utrNumber}
-                      className="mt-3 w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {submittingUtr ? "Submitting..." : "Submit for Verification"}
-                    </button>
-                    <p className="text-xs text-gray-500 mt-2">
-                      After UPI payment, paste your UTR here. Access will be granted after admin verification.
-                    </p>
-                  </div>
-
+                  <p className="text-xs text-gray-600">
+                    Course will be accessible after admin approval. No UTR is required.
+                  </p>
                   <button
                     onClick={() => setShowEnrollmentModal(false)}
                     className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
@@ -495,7 +494,6 @@ const CourseDetail = () => {
                     </p>
                   </div>
                   <div className="text-sm bg-gray-50 rounded-lg p-4">
-                    <div className="flex justify-between"><span className="text-gray-600">Receipt (UTR):</span><span className="font-medium">{receipt.utrNumber}</span></div>
                     <div className="flex justify-between"><span className="text-gray-600">Name:</span><span className="font-medium">{receipt.name}</span></div>
                     <div className="flex justify-between"><span className="text-gray-600">Email:</span><span className="font-medium">{receipt.email}</span></div>
                     <div className="flex justify-between"><span className="text-gray-600">Phone:</span><span className="font-medium">{receipt.phone}</span></div>
@@ -512,6 +510,36 @@ const CourseDetail = () => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Modal for Desktop */}
+      {showQrCode && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 rounded-lg shadow-lg relative max-w-sm w-full">
+            <button
+              onClick={() => setShowQrCode(false)}
+              className="absolute top-2 right-2 text-gray-600 hover:text-black"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold mb-4 text-center">Scan to Pay</h2>
+            <div className="flex justify-center mb-4">
+              <QRCodeCanvas value={upiUrl} size={200} />
+            </div>
+            <p className="text-sm text-gray-600 text-center mb-4">
+              Scan this QR code with your UPI app to complete payment
+            </p>
+            <div className="text-xs text-gray-500 text-center bg-gray-50 p-2 rounded">
+              <p className="break-all">{upiUrl}</p>
+            </div>
+            <button
+              onClick={() => setShowQrCode(false)}
+              className="w-full mt-4 px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

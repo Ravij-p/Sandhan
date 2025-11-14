@@ -101,7 +101,7 @@ app.get("/api/receipt/:receiptNumber", async (req, res) => {
     doc
       .fontSize(24)
       .fillColor("#2c3e50")
-      .text("SANDHAN GROUP OF INSTITUTE", { align: "center" });
+      .text("TUSHTI IAS", { align: "center" });
     doc
       .moveDown(7.5)
       .fontSize(18)
@@ -150,7 +150,7 @@ app.get("/api/receipt/:receiptNumber", async (req, res) => {
     doc
       .fontSize(12)
       .fillColor("#7f8c8d")
-      .text("We appreciate your trust in Sandhan Group of Institute", 50, 410, {
+      .text("We appreciate your trust in Tushti IAS", 50, 410, {
         align: "center",
       });
 
@@ -291,7 +291,7 @@ app.get("/api/export/excel", async (req, res) => {
   try {
     const workbook = await generateExcelReport(User);
 
-    const fileName = `Sandhan_Institute_Report_${moment().format(
+    const fileName = `Tushti_IAS_Report_${moment().format(
       "YYYY-MM-DD"
     )}.xlsx`;
     const filePath = path.join(__dirname, fileName);

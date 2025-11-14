@@ -8,10 +8,27 @@ const {
   requireStudent,
 } = require("../middleware/auth");
 const multer = require("multer");
-const path = require("path");
-const CloudflareR2Service = require("../services/cloudflareR2");
+const CloudinaryService = require("../services/cloudinaryService");
 
 const router = express.Router();
+
+// Configure multer for memory storage
+const storage = multer.memoryStorage();
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 500 * 1024 * 1024, // 500MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow video files
+    if (file.mimetype.startsWith("video/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only video files are allowed"), false);
+    }
+  },
+});
 
 // Test endpoint to check all courses (including inactive)
 router.get("/test/all", async (req, res) => {
@@ -33,24 +50,6 @@ router.get("/test/all", async (req, res) => {
   }
 });
 
-// Configure multer for memory storage (for R2 uploads)
-const storage = multer.memoryStorage();
-
-const upload = multer({
-  storage,
-  limits: {
-    fileSize: 500 * 1024 * 1024, // 500MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    // Allow video files
-    if (file.mimetype.startsWith("video/")) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only video files are allowed"), false);
-    }
-  },
-});
-
 // Get all courses (public)
 router.get("/", async (req, res) => {
   try {
@@ -60,10 +59,6 @@ router.get("/", async (req, res) => {
       .sort({ createdAt: -1 });
 
     console.log(`Found ${courses.length} courses`);
-    console.log(
-      "Courses data:",
-      courses.map((c) => ({ id: c._id, title: c.title, isActive: c.isActive }))
-    );
     res.json({
       success: true,
       courses,
@@ -156,7 +151,39 @@ router.get("/:id/videos", verifyToken, requireStudent, async (req, res) => {
   }
 });
 
-// Get specific video with signed URL (requires authentication and enrollment)
+// Get course materials (requires authentication and enrollment)
+router.get("/:id/materials", verifyToken, requireStudent, async (req, res) => {
+  try {
+    const courseId = req.params.id;
+    const studentId = req.user._id;
+
+    const student = await Student.findById(studentId);
+    const isEnrolled = student.enrolledCourses.some(
+      (enrollment) =>
+        enrollment.course.toString() === courseId &&
+        enrollment.paymentStatus === "paid"
+    );
+
+    if (!isEnrolled) {
+      return res.status(403).json({
+        error:
+          "Access denied. You must be enrolled in this course to view materials.",
+      });
+    }
+
+    const course = await Course.findById(courseId).select("materials title");
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    res.json({ success: true, materials: course.materials || [] });
+  } catch (error) {
+    console.error("Fetch course materials error:", error);
+    res.status(500).json({ error: "Failed to fetch course materials" });
+  }
+});
+
+// Get specific video (requires authentication and enrollment)
 router.get(
   "/:courseId/videos/:videoId",
   verifyToken,
@@ -192,18 +219,7 @@ router.get(
         return res.status(404).json({ error: "Video not found" });
       }
 
-      // Generate signed URL for video access
-      const signedUrlResult = await CloudflareR2Service.generateSignedUrl(
-        video.videoUrl,
-        3600
-      ); // 1 hour expiry
-
-      if (!signedUrlResult.success) {
-        return res
-          .status(500)
-          .json({ error: "Failed to generate video access URL" });
-      }
-
+      // Return video with Cloudinary URL (already public)
       res.json({
         success: true,
         video: {
@@ -212,9 +228,9 @@ router.get(
           description: video.description,
           duration: video.duration,
           order: video.order,
+          videoUrl: video.videoUrl, // Cloudinary URL
+          thumbnail: video.thumbnail,
         },
-        signedUrl: signedUrlResult.signedUrl,
-        expiresIn: signedUrlResult.expiresIn,
       });
     } catch (error) {
       console.error("Fetch video error:", error);
@@ -303,6 +319,54 @@ router.put("/:id", verifyToken, requireAdmin, async (req, res) => {
   }
 });
 
+// Admin: Add material (video/pdf) to course
+router.post("/:id/materials", verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const { title, fileUrl, fileType } = req.body;
+    const courseId = req.params.id;
+
+    if (!title || !fileUrl || !fileType) {
+      return res
+        .status(400)
+        .json({ error: "title, fileUrl and fileType are required" });
+    }
+    if (!["video", "pdf"].includes(fileType)) {
+      return res.status(400).json({ error: "fileType must be video or pdf" });
+    }
+
+    const course = await Course.findById(courseId);
+    if (!course) return res.status(404).json({ error: "Course not found" });
+
+    course.materials.push({ title, fileUrl, fileType });
+    await course.save();
+
+    res.status(201).json({ success: true, materials: course.materials });
+  } catch (error) {
+    console.error("Add material error:", error);
+    res.status(500).json({ error: "Failed to add material" });
+  }
+});
+
+// Admin: Set/Update course payment details
+router.put("/:id/payment", verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const { amount, upiLink, qrCode } = req.body;
+    const course = await Course.findById(req.params.id);
+    if (!course) return res.status(404).json({ error: "Course not found" });
+
+    if (!course.payment) course.payment = {};
+    if (amount !== undefined) course.payment.amount = amount;
+    if (upiLink !== undefined) course.payment.upiLink = upiLink;
+    if (qrCode !== undefined) course.payment.qrCode = qrCode;
+
+    await course.save();
+    res.json({ success: true, payment: course.payment });
+  } catch (error) {
+    console.error("Update payment error:", error);
+    res.status(500).json({ error: "Failed to update payment details" });
+  }
+});
+
 // Admin: Delete course
 router.delete("/:id", verifyToken, requireAdmin, async (req, res) => {
   try {
@@ -333,7 +397,7 @@ router.post(
   upload.single("video"),
   async (req, res) => {
     try {
-      const { title, description, duration, order, cloudinaryUrl } = req.body;
+      const { title, description, duration, order } = req.body;
       const courseId = req.params.id;
 
       // Validation
@@ -343,46 +407,14 @@ router.post(
           .json({ error: "Title and video file are required" });
       }
 
-      // Support Cloudinary-hosted videos when URL is provided
-      if (cloudinaryUrl) {
-        const video = new Video({
-          title,
-          description: description || "",
-          videoUrl: cloudinaryUrl,
-          thumbnail: "",
-          duration: duration ? parseInt(duration) : 0,
-          order: order ? parseInt(order) : 0,
-          course: courseId,
-          createdBy: req.user._id,
-        });
-        await video.save();
-        const course = await Course.findById(courseId);
-        if (course) {
-          course.videos.push(video._id);
-          await course.save();
-        }
-        return res.status(201).json({
-          success: true,
-          message: "Video added from Cloudinary URL",
-          video: {
-            _id: video._id,
-            title: video.title,
-            description: video.description,
-            duration: video.duration,
-            order: video.order,
-            course: video.course,
-          },
-        });
-      }
-
-      // Validate file type and size for direct uploads to R2
-      if (!CloudflareR2Service.validateFileType(req.file)) {
+      // Validate file type and size
+      if (!CloudinaryService.validateFileType(req.file)) {
         return res
           .status(400)
           .json({ error: "Invalid file type. Only video files are allowed." });
       }
 
-      if (!CloudflareR2Service.validateFileSize(req.file)) {
+      if (!CloudinaryService.validateFileSize(req.file)) {
         return res
           .status(400)
           .json({ error: "File size too large. Maximum size is 500MB." });
@@ -394,17 +426,10 @@ router.post(
         return res.status(404).json({ error: "Course not found" });
       }
 
-      // Generate unique file key
-      const fileKey = CloudflareR2Service.generateFileKey(
-        req.file.originalname,
-        `courses/${courseId}/videos`
-      );
-
-      // Upload to Cloudflare R2
-      const uploadResult = await CloudflareR2Service.uploadFile(
+      // Upload to Cloudinary
+      const uploadResult = await CloudinaryService.uploadVideo(
         req.file,
-        fileKey,
-        req.file.mimetype
+        `courses/${courseId}/videos`
       );
 
       if (!uploadResult.success) {
@@ -413,16 +438,22 @@ router.post(
           .json({ error: "Failed to upload video: " + uploadResult.error });
       }
 
+      // Generate thumbnail URL from Cloudinary
+      const thumbnailUrl = CloudinaryService.generateThumbnailUrl(
+        uploadResult.publicId
+      );
+
       // Create video record
       const video = new Video({
         title,
         description: description || "",
-        videoUrl: fileKey, // Store the R2 key, not the full URL
-        thumbnail: "", // Can be added later
-        duration: duration ? parseInt(duration) : 0,
+        videoUrl: uploadResult.url,
+        thumbnail: thumbnailUrl,
+        duration: duration ? parseInt(duration) : uploadResult.duration || 0,
         order: order ? parseInt(order) : 0,
         course: courseId,
         createdBy: req.user._id,
+        cloudinaryPublicId: uploadResult.publicId, // Store for deletion later
       });
 
       await video.save();
@@ -438,6 +469,8 @@ router.post(
           _id: video._id,
           title: video.title,
           description: video.description,
+          videoUrl: video.videoUrl,
+          thumbnail: video.thumbnail,
           duration: video.duration,
           order: video.order,
           course: video.course,
@@ -458,8 +491,7 @@ router.put(
   upload.single("thumbnail"),
   async (req, res) => {
     try {
-      const { title, description, videoUrl, duration, order, isActive } =
-        req.body;
+      const { title, description, duration, order, isActive } = req.body;
       const { courseId, videoId } = req.params;
 
       const video = await Video.findOne({ _id: videoId, course: courseId });
@@ -470,11 +502,20 @@ router.put(
       // Update fields
       if (title) video.title = title;
       if (description !== undefined) video.description = description;
-      if (videoUrl) video.videoUrl = videoUrl;
-      if (req.file) video.thumbnail = req.file.path;
       if (duration) video.duration = parseInt(duration);
       if (order) video.order = parseInt(order);
       if (isActive !== undefined) video.isActive = isActive;
+
+      // Upload new thumbnail if provided
+      if (req.file) {
+        const uploadResult = await CloudinaryService.uploadImage(
+          req.file,
+          `courses/${courseId}/thumbnails`
+        );
+        if (uploadResult.success) {
+          video.thumbnail = uploadResult.url;
+        }
+      }
 
       await video.save();
 
@@ -502,6 +543,14 @@ router.delete(
       const video = await Video.findOne({ _id: videoId, course: courseId });
       if (!video) {
         return res.status(404).json({ error: "Video not found" });
+      }
+
+      // Delete from Cloudinary if publicId exists
+      if (video.cloudinaryPublicId) {
+        await CloudinaryService.deleteResource(
+          video.cloudinaryPublicId,
+          'video'
+        );
       }
 
       // Soft delete - set isActive to false

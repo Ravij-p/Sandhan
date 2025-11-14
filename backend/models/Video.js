@@ -36,6 +36,10 @@ const videoSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    cloudinaryPublicId: {
+      type: String,
+      default: '',
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Admin",

@@ -65,8 +65,7 @@ const AppContent = () => {
     const fetchCourses = async () => {
       try {
         const response = await fetch(
-          `${
-            process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api"
+          `${process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api"
           }/courses`
         );
         const data = await response.json();
@@ -93,7 +92,7 @@ const AppContent = () => {
     fetchAds();
   }, []);
   const Navigation = () => (
-    <nav className="fixed top-0 left-0 right-0 z-40 bg-[#f9dc41] shadow-md px-4 mt-20 sm:mt-14 lg:mt-8">
+    <nav className="fixed top-8 left-0 right-0 z-40 bg-[#f9dc41] shadow-md px-4">
       <div className="container mx-auto flex items-center justify-between py-2 sm:py-3">
         <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
           <img
@@ -104,17 +103,16 @@ const AppContent = () => {
             className="sm:w-12 sm:h-12 flex-shrink-0"
           />
           <h1 className="text-sm sm:text-lg lg:text-xl font-bold text-gray-800 truncate">
-            SANDHAN GROUP OF INSTITUTE
+            Tushti IAS
           </h1>
         </div>
         <div className="hidden lg:flex items-center space-x-6">
           <NavLink
             to="/"
             className={({ isActive }) =>
-              `px-3 py-2 rounded ${
-                isActive
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-800 hover:bg-gray-200"
+              `px-3 py-2 rounded ${isActive
+                ? "bg-gray-800 text-white"
+                : "text-gray-800 hover:bg-gray-200"
               }`
             }
           >
@@ -152,9 +150,8 @@ const AppContent = () => {
                         navigate(`/course/${course._id}`);
                         setIsCoursesDropdownOpen(false);
                       }}
-                      className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${
-                        idx === courses.length - 1 ? "rounded-b-lg" : ""
-                      }`}
+                      className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${idx === courses.length - 1 ? "rounded-b-lg" : ""
+                        }`}
                     >
                       {course.title}
                     </button>
@@ -167,10 +164,9 @@ const AppContent = () => {
           <NavLink
             to="/testSeries"
             className={({ isActive }) =>
-              `px-3 py-2 rounded ${
-                isActive
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-800 hover:bg-gray-200"
+              `px-3 py-2 rounded ${isActive
+                ? "bg-gray-800 text-white"
+                : "text-gray-800 hover:bg-gray-200"
               }`
             }
           >
@@ -179,10 +175,9 @@ const AppContent = () => {
           <NavLink
             to="/about"
             className={({ isActive }) =>
-              `px-3 py-2 rounded ${
-                isActive
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-800 hover:bg-gray-200"
+              `px-3 py-2 rounded ${isActive
+                ? "bg-gray-800 text-white"
+                : "text-gray-800 hover:bg-gray-200"
               }`
             }
           >
@@ -288,10 +283,9 @@ const AppContent = () => {
           <NavLink
             to="/testSeries"
             className={({ isActive }) =>
-              `px-3 py-2 rounded ${
-                isActive
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-800 hover:bg-gray-200"
+              `px-3 py-2 rounded ${isActive
+                ? "bg-gray-800 text-white"
+                : "text-gray-800 hover:bg-gray-200"
               }`
             }
             onClick={() => setIsMobileMenuOpen(false)}
@@ -301,10 +295,9 @@ const AppContent = () => {
           <NavLink
             to="/about"
             className={({ isActive }) =>
-              `px-3 py-2 rounded ${
-                isActive
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-800 hover:bg-gray-200"
+              `px-3 py-2 rounded ${isActive
+                ? "bg-gray-800 text-white"
+                : "text-gray-800 hover:bg-gray-200"
               }`
             }
             onClick={() => setIsMobileMenuOpen(false)}
@@ -428,9 +421,8 @@ const AppContent = () => {
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
-                className={`w-3 h-3 rounded-full transition-colors ${
-                  currentSlide === index ? "bg-yellow-400" : "bg-gray-300"
-                }`}
+                className={`w-3 h-3 rounded-full transition-colors ${currentSlide === index ? "bg-yellow-400" : "bg-gray-300"
+                  }`}
               />
             ))}
           </div>
@@ -475,7 +467,7 @@ const AppContent = () => {
   );
 
   const HomePage = () => (
-    <div className="pt-32 sm:pt-28 md:pt-24 lg:pt-20">
+    <div className="pt-40 sm:pt-36 md:pt-32 lg:pt-28">
       {
         // <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
         //   <div className="relative bg-white rounded-lg shadow-lg p-0 max-w-md w-full">

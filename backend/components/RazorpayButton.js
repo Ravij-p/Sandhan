@@ -29,7 +29,7 @@ const RazorpayButton = ({ name, mobile, course, amount = 1000 }) => {
         key: orderData.key,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: "Sandhan Group of Institute",
+        name: "Tushti IAS",
         description: `Course: ${course}`,
         order_id: orderData.orderId,
         handler: async function (response) {

@@ -50,6 +50,18 @@ const courseSchema = new mongoose.Schema(
         ref: "Document",
       },
     ],
+    materials: [
+      {
+        title: { type: String },
+        fileUrl: { type: String },
+        fileType: { type: String, enum: ["video", "pdf"] },
+      },
+    ],
+    payment: {
+      amount: { type: Number },
+      upiLink: { type: String },
+      qrCode: { type: String },
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Admin",

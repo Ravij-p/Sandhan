@@ -68,7 +68,7 @@ export default function ReportsPage() {
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", "Sandhan_Institute_Report.xlsx");
+      link.setAttribute("download", "Tushti_IAS_Report.xlsx");
       document.body.appendChild(link);
       link.click();
     });
@@ -187,11 +187,10 @@ export default function ReportsPage() {
           <button
             disabled={page === 1}
             onClick={() => setPage(page - 1)}
-            className={`px-4 py-2 rounded-lg shadow ${
-              page === 1
-                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
-            }`}
+            className={`px-4 py-2 rounded-lg shadow ${page === 1
+              ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+              : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
           >
             ◀ Prev
           </button>
@@ -203,11 +202,10 @@ export default function ReportsPage() {
           <button
             disabled={page === totalPages}
             onClick={() => setPage(page + 1)}
-            className={`px-4 py-2 rounded-lg shadow ${
-              page === totalPages
-                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
-            }`}
+            className={`px-4 py-2 rounded-lg shadow ${page === totalPages
+              ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+              : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
           >
             Next ▶
           </button>

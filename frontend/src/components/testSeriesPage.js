@@ -1,18 +1,21 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { BookOpen, ShoppingCart, CheckCircle } from "lucide-react";
+import { BookOpen, ShoppingCart, CheckCircle, X } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+import { QRCodeCanvas } from "qrcode.react";
 
 export const TestSeriesPage = () => {
-  const { isAuthenticated, isStudent } = useAuth();
+  const { isAuthenticated, isStudent, user } = useAuth();
   const [testSeries, setTestSeries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [purchasing, setPurchasing] = useState(null);
+  const [qrCodeValue, setQrCodeValue] = useState(null); // store UPI QR link
 
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
 
+  // Fetch test series
   const fetchTestSeries = useCallback(async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/test-series`);
@@ -21,8 +24,8 @@ export const TestSeriesPage = () => {
       } else {
         setError("Failed to load test series");
       }
-    } catch (error) {
-      console.error("Error fetching test series:", error);
+    } catch (err) {
+      console.error("Error fetching test series:", err);
       setError("Failed to load test series");
     } finally {
       setLoading(false);
@@ -33,6 +36,9 @@ export const TestSeriesPage = () => {
     fetchTestSeries();
   }, [fetchTestSeries]);
 
+  const isMobile = () => /Mobi|Android/i.test(navigator.userAgent);
+
+  // Handle purchase click
   const handlePurchase = async (testSeriesId) => {
     if (!isAuthenticated || !isStudent) {
       alert("Please login as a student to purchase test series");
@@ -40,19 +46,48 @@ export const TestSeriesPage = () => {
     }
 
     setPurchasing(testSeriesId);
+
     try {
       const token = localStorage.getItem("token");
-
-      // Redirect to UPI and accept manual verification for test series
-      const pa = process.env.REACT_APP_UPI_VPA || "xyz@xyz";
-      const pn = process.env.REACT_APP_UPI_NAME || "Sandhan Institute";
       const series = testSeries.find((t) => t._id === testSeriesId);
       const amount = series?.price || 0;
-      const params = new URLSearchParams({ pa, pn, am: String(amount), cu: "INR", tn: `Test Series ${series?.title || "Payment"}` });
-      window.location.href = `upi://pay?${params.toString()}`;
-      alert("After payment, please contact support with your UTR for test series access.");
-    } catch (error) {
-      console.error("Purchase error:", error);
+
+      // Save purchase intent in backend
+      await axios.post(
+        `${API_BASE_URL}/purchase`,
+        {
+          testSeriesId,
+          email: user?.email,
+          amount,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Prepare UPI link
+      const pa = process.env.REACT_APP_UPI_VPA || "xyz@xyz";
+      const pn = process.env.REACT_APP_UPI_NAME || "Tushti IAS";
+      const params = new URLSearchParams({
+        pa,
+        pn,
+        am: String(amount),
+        cu: "INR",
+        tn: `Test Series ${series?.title || "Payment"}`,
+      });
+      const upiUrl = `upi://pay?${params.toString()}`;
+
+      if (isMobile()) {
+        // Mobile → open UPI app
+        window.location.href = upiUrl;
+      } else {
+        // Desktop → show QR code
+        setQrCodeValue(upiUrl);
+      }
+
+      alert(
+        "After payment, please contact support with your UTR for test series access."
+      );
+    } catch (err) {
+      console.error("Purchase error:", err);
       alert("❌ Failed to initiate purchase. Please try again.");
     } finally {
       setPurchasing(null);
@@ -61,7 +96,7 @@ export const TestSeriesPage = () => {
 
   if (loading) {
     return (
-      <div className="pt-32 sm:pt-28 md:pt-24 lg:pt-20">
+      <div className="pt-40 sm:pt-36 md:pt-32 lg:pt-28">
         <div className="py-20" style={{ backgroundColor: "#fafaee" }}>
           <div className="container mx-auto px-4 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto"></div>
@@ -73,7 +108,7 @@ export const TestSeriesPage = () => {
   }
 
   return (
-    <div className="pt-32 sm:pt-28 md:pt-24 lg:pt-20">
+    <div className="pt-40 sm:pt-36 md:pt-32 lg:pt-28">
       <div className="py-20" style={{ backgroundColor: "#fafaee" }}>
         <div className="container mx-auto px-4">
           <h1
@@ -204,6 +239,25 @@ export const TestSeriesPage = () => {
           )}
         </div>
       </div>
+
+      {/* QR Code Modal for Desktop */}
+      {qrCodeValue && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg relative">
+            <button
+              onClick={() => setQrCodeValue(null)}
+              className="absolute top-2 right-2 text-gray-600 hover:text-black"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold mb-4 text-center">Scan to Pay</h2>
+            <QRCodeCanvas value={qrCodeValue} size={200} />
+            <p className="text-sm text-gray-600 mt-3 text-center">
+              Scan with any UPI app to complete payment
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

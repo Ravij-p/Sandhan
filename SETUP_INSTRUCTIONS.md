@@ -1,7 +1,7 @@
-# Sandhan App Upgrade - Setup Instructions
+# Tushti IAS App Upgrade - Setup Instructions
 
 ## Overview
-Your Sandhan App has been upgraded with the following new features:
+Your Tushti IAS App has been upgraded with the following new features:
 
 ### New Features Added:
 1. **Student Authentication System**
@@ -38,7 +38,7 @@ npm install bcryptjs jsonwebtoken multer
 Create a `.env` file in the backend directory with:
 ```env
 # Database
-MONGO_URI=mongodb://localhost:27017/sandhan_app
+MONGO_URI=mongodb://localhost:27017/trushtiias_app
 
 # JWT Secret
 JWT_SECRET=your_super_secret_jwt_key_here

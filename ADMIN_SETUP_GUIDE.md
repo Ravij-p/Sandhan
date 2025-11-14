@@ -1,4 +1,4 @@
-# Admin Setup Guide - Sandhan App
+# Admin Setup Guide - Tushti IAS App
 
 ## 🔐 Admin Credentials Setup
 
@@ -17,7 +17,7 @@ curl -X POST http://localhost:5000/api/admin/create-admin \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Admin Name",
-    "email": "admin@sandhan.com",
+    "email": "admin@trushtiias.com",
     "password": "admin123"
   }'
 ```
@@ -31,7 +31,7 @@ curl -X POST http://localhost:5000/api/admin/create-admin \
 ```json
 {
   "name": "Admin Name",
-  "email": "admin@sandhan.com",
+  "email": "admin@trushtiias.com",
   "password": "admin123"
 }
 ```
@@ -45,7 +45,7 @@ fetch('http://localhost:5000/api/admin/create-admin', {
   },
   body: JSON.stringify({
     name: 'Admin Name',
-    email: 'admin@sandhan.com',
+    email: 'admin@trushtiias.com',
     password: 'admin123'
   })
 })
@@ -56,7 +56,7 @@ fetch('http://localhost:5000/api/admin/create-admin', {
 ### Step 3: Your Admin Credentials
 After successful creation, your admin credentials will be:
 
-- **Email:** `admin@sandhan.com`
+- **Email:** `admin@trushtiias.com`
 - **Password:** `admin123`
 - **Role:** `super_admin`
 
@@ -66,7 +66,7 @@ After successful creation, your admin credentials will be:
 3. Click "Login" button
 4. Click "Admin Login"
 5. Enter your credentials:
-   - Email: `admin@sandhan.com`
+   - Email: `admin@trushtiias.com`
    - Password: `admin123`
 
 ## 🎯 Admin Features Available
@@ -135,7 +135,7 @@ This means an admin account has already been created. Use the login endpoint ins
 curl -X POST http://localhost:5000/api/auth/admin/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "admin@sandhan.com",
+    "email": "admin@trushtiias.com",
     "password": "admin123"
   }'
 ```
@@ -204,4 +204,4 @@ The admin dashboard provides:
    - Review student feedback
    - Optimize course content
 
-Your Sandhan App is now ready for production use with full admin capabilities!
+Your Tushti IAS App is now ready for production use with full admin capabilities!

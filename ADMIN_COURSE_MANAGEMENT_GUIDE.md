@@ -36,7 +36,7 @@ I've created a dedicated admin course management page at `/admin/courses` with c
 2. Click "Login" button
 3. Click "Admin Login"
 4. Use your admin credentials:
-   - **Email:** `admin@sandhan.com`
+   - **Email:** `admin@trushtiias.com`
    - **Password:** `admin123`
 
 ### **Step 2: Navigate to Course Management**

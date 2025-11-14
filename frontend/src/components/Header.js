@@ -9,11 +9,11 @@ const Header = () => (
       {/* Left side: Email + Phone */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center sm:space-x-6 space-y-1 sm:space-y-0">
         <a
-          href="mailto:info@sandhanacademy.com"
+          href="mailto:info@trushtiias.com"
           className="hover:text-[#f9dc41] transition-colors flex items-center text-left"
         >
           <Mail size={20} className="mr-2" />
-          <span>info@sandhanacademy.com</span>
+          <span>info@trushtiias.com</span>
         </a>
 
         <a
