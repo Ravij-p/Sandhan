@@ -5,7 +5,7 @@ const Document = require("../models/Document");
 const Course = require("../models/Course");
 const Student = require("../models/Student");
 const { verifyToken, requireAdmin } = require("../middleware/auth");
-const CloudinaryService = require("../services/cloudinaryService");
+const CloudinaryService = require("../services/cloudinaryService.js");
 
 const router = express.Router();
 
@@ -354,13 +354,11 @@ router.get("/stream/:id", verifyToken, async (req, res) => {
       document.originalName
     );
     if (!result || !result.success) {
-      return res
-        .status(502)
-        .json({
-          success: false,
-          message: "Failed to construct working Cloudinary URL",
-          diagnostics: result?.diagnostics,
-        });
+      return res.status(502).json({
+        success: false,
+        message: "Failed to construct working Cloudinary URL",
+        diagnostics: result?.diagnostics,
+      });
     }
 
     const cloudResp = await axios.get(result.url, {
@@ -368,14 +366,12 @@ router.get("/stream/:id", verifyToken, async (req, res) => {
       validateStatus: null,
     });
     if (!cloudResp || cloudResp.status !== 200) {
-      return res
-        .status(502)
-        .json({
-          success: false,
-          message: "Failed to fetch file from Cloudinary",
-          cloudinaryStatus: cloudResp?.status,
-          cloudinaryMessage: cloudResp?.statusText,
-        });
+      return res.status(502).json({
+        success: false,
+        message: "Failed to fetch file from Cloudinary",
+        cloudinaryStatus: cloudResp?.status,
+        cloudinaryMessage: cloudResp?.statusText,
+      });
     }
 
     const filename = document.originalName || "download";

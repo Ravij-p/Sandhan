@@ -9,7 +9,7 @@ const {
   requireStudent,
 } = require("../middleware/auth");
 const multer = require("multer");
-const CloudinaryService = require("../services/cloudinaryService");
+const CloudinaryService = require("../services/cloudinaryService.js");
 
 const router = express.Router();
 
