@@ -291,9 +291,7 @@ app.get("/api/export/excel", async (req, res) => {
   try {
     const workbook = await generateExcelReport(User);
 
-    const fileName = `Tushti_IAS_Report_${moment().format(
-      "YYYY-MM-DD"
-    )}.xlsx`;
+    const fileName = `Tushti_IAS_Report_${moment().format("YYYY-MM-DD")}.xlsx`;
     const filePath = path.join(__dirname, fileName);
 
     // Write workbook to file
@@ -406,7 +404,9 @@ app.listen(PORT, () => {
   console.log(`🚀 Server started on port ${PORT}`);
   console.log(`📊 API Documentation:`);
   console.log(`   POST /api/upi-payments/initiate - Get UPI intent URL`);
-  console.log(`   POST /api/upi-payments/submit-utr - Submit UTR for verification`);
+  console.log(
+    `   POST /api/upi-payments/submit-utr - Submit UTR for verification`
+  );
   console.log(`   GET  /api/download-receipt/:filename - Download PDF receipt`);
   console.log(
     `   POST /api/payment-direct - Direct payment (without Razorpay)`

@@ -605,7 +605,7 @@ router.delete(
       if (video.cloudinaryPublicId) {
         await CloudinaryService.deleteResource(
           video.cloudinaryPublicId,
-          'video'
+          "video"
         );
       }
 
@@ -658,7 +658,10 @@ router.patch(
       }
 
       // Support both Mongoose Map and plain object
-      if (student.watchedProgress && typeof student.watchedProgress.set === "function") {
+      if (
+        student.watchedProgress &&
+        typeof student.watchedProgress.set === "function"
+      ) {
         student.watchedProgress.set(videoId, Number(timestamp));
       } else {
         student.watchedProgress = student.watchedProgress || {};
