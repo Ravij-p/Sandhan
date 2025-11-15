@@ -116,7 +116,7 @@ const CourseManagement = () => {
       setMaterialFile(null);
       setMaterialType("video");
       // refresh list
-      fetchCourses(true);
+      await fetchCourses(true);
     } catch (e) {
       console.error(e);
       showNotification("Failed to add material", "error");

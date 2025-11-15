@@ -10,6 +10,9 @@ import {
   LogOut,
   Plus,
   Settings,
+  FileText,
+  ShieldCheck,
+  Image,
 } from "lucide-react";
 import axios from "axios";
 
@@ -19,6 +22,7 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [recentEnrollments, setRecentEnrollments] = useState([]);
   const [courseStats, setCourseStats] = useState([]);
+  const [features, setFeatures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -41,6 +45,14 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    (async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/admin/features`);
+        setFeatures(res.data.features || []);
+      } catch (e) {
+        // ignore
+      }
+    })();
   }, [fetchDashboardData]);
 
   const handleLogout = () => {
@@ -71,7 +83,7 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-32 sm:pt-28 md:pt-24 lg:pt-20">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -94,13 +106,6 @@ const AdminDashboard = () => {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-              <button
-                onClick={() => navigate("/admin/courses")}
-                className="flex items-center space-x-2 px-3 py-2 text-xs sm:text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg w-full sm:w-auto justify-center sm:justify-start"
-              >
-                <BookOpen size={14} className="sm:w-4 sm:h-4" />
-                <span>Manage Courses</span>
-              </button>
               <button
                 onClick={handleLogout}
                 className="flex items-center space-x-2 px-3 py-2 text-xs sm:text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg w-full sm:w-auto justify-center sm:justify-start"
@@ -264,72 +269,36 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Admin Features */}
         <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <button
-              onClick={() => navigate("/admin/test-series")}
-              className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-            >
-              <BookOpen className="text-purple-600" size={24} />
-              <div className="text-left">
-                <h3 className="font-medium text-gray-900">
-                  Manage Test Series
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Create and manage test series
-                </p>
-              </div>
-            </button>
-
-            <button
-              onClick={() => navigate("/admin/courses/new")}
-              className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-            >
-              <Plus className="text-green-600" size={24} />
-              <div className="text-left">
-                <h3 className="font-medium text-gray-900">Add New Course</h3>
-                <p className="text-sm text-gray-600">Create a new course</p>
-              </div>
-            </button>
-
-            <button
-              onClick={() => (window.location.href = "/admin/students")}
-              className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-            >
-              <Users className="text-purple-600" size={24} />
-              <div className="text-left">
-                <h3 className="font-medium text-gray-900">Manage Students</h3>
-                <p className="text-sm text-gray-600">
-                  View and manage students
-                </p>
-              </div>
-            </button>
-
-            <button
-              onClick={() => (window.location.href = "/admin/payments")}
-              className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-            >
-              <TrendingUp className="text-orange-600" size={24} />
-              <div className="text-left">
-                <h3 className="font-medium text-gray-900">Payment Reports</h3>
-                <p className="text-sm text-gray-600">View payment history</p>
-              </div>
-            </button>
-
-            <button
-              onClick={testCourseAPI}
-              className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-            >
-              <Settings className="text-red-600" size={24} />
-              <div className="text-left">
-                <h3 className="font-medium text-gray-900">Test API</h3>
-                <p className="text-sm text-gray-600">Debug course API</p>
-              </div>
-            </button>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Admin Features</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {features.map((f) => {
+              const Icon = {
+                BookOpen,
+                Play,
+                FileText,
+                ShieldCheck,
+                Settings,
+                Image,
+              }[f.icon] || Settings;
+              return (
+                <button
+                  key={f.key}
+                  onClick={() => navigate(f.path)}
+                  className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left"
+                >
+                  <Icon className="text-blue-600" size={24} />
+                  <div>
+                    <h3 className="font-medium text-gray-900">{f.title}</h3>
+                    <p className="text-sm text-gray-600">{f.description}</p>
+                  </div>
+                </button>
+              );
+            })}
+            {features.length === 0 && (
+              <div className="text-sm text-gray-500">No features available</div>
+            )}
           </div>
         </div>
       </div>

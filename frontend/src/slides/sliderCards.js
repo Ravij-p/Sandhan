@@ -2,12 +2,12 @@ export const sliderCards = [
   {
     id: 1,
     img_link: "WhatsApp Image 2025-08-26 at 08.08.35_26446f76.jpg",
-    routing_link: "/gpsc",
+    routing_link: "/courses",
   },
   {
     id: 2,
     img_link: "WhatsApp Image 2025-08-26 at 08.09.19_1ce3463f.jpg",
-    routing_link: "/",
+    routing_link: "/courses",
   },
 ];
 export const courseCards = [
@@ -15,7 +15,7 @@ export const courseCards = [
     id: 2,
     title: "GPSC Training",
     description: "Gujarat Public Service Commission exam coaching",
-    route: "/gpsc",
+    route: "/courses",
     color: "bg-purple-100",
   },
   {
@@ -23,14 +23,14 @@ export const courseCards = [
     title: "UPSC Preparation",
     description:
       "Civil Services exam preparation with comprehensive study material",
-    route: "/upsc",
+    route: "/courses",
     color: "bg-red-100",
   },
   {
     id: 4,
     title: "Mock Tests",
     description: "Regular mock tests to assess your preparation level",
-    route: "/testSeries",
+    route: "/courses",
     color: "bg-yellow-100",
   },
 ];

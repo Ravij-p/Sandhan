@@ -7,42 +7,51 @@ import axios from "axios";
 const CourseContent = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { user, isStudent } = useAuth();
+  const { user, isAuthenticated, isStudent, isAdmin } = useAuth();
   const [course, setCourse] = useState(null);
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const [watchedProgress, setWatchedProgress] = useState({});
 
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
 
   useEffect(() => {
-    if (!isStudent) {
+    if (!isAuthenticated) {
       navigate("/");
       return;
     }
     fetchCourseContent();
-  }, [courseId, isStudent, navigate]);
+  }, [courseId, isAuthenticated, navigate]);
 
   const fetchCourseContent = async () => {
     try {
+      const token = localStorage.getItem("token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const response = await axios.get(
-        `${API_BASE_URL}/courses/${courseId}/videos`
+        `${API_BASE_URL}/courses/${courseId}/videos`,
+        { headers }
       );
       setCourse(response.data.course);
       setVideos(response.data.videos);
 
-      // Set first video as selected by default
       if (response.data.videos.length > 0) {
         setSelectedVideo(response.data.videos[0]);
+      }
+
+      // Fetch watched progress (if student)
+      if (isStudent) {
+        const profileRes = await axios.get(`${API_BASE_URL}/auth/profile`, { headers });
+        const progressMap = profileRes.data?.user?.watchedProgress || {};
+        const obj = Object.fromEntries(Array.from(progressMap instanceof Map ? progressMap.entries() : Object.entries(progressMap)));
+        setWatchedProgress(obj);
       }
     } catch (error) {
       console.error("Error fetching course content:", error);
       if (error.response?.status === 403) {
-        setError(
-          "You need to be enrolled in this course to access the videos."
-        );
+        setError("You need to be enrolled in this course to access the videos.");
       } else {
         setError("Failed to load course content");
       }
@@ -204,6 +213,14 @@ const CourseContent = () => {
                           <div className="flex items-center mt-1 text-xs text-gray-500">
                             <Clock size={10} className="mr-1 sm:w-3 sm:h-3" />
                             {formatDuration(video.duration)}
+                          </div>
+                        )}
+                        {watchedProgress[video._id] !== undefined && video.duration > 0 && (
+                          <div className="mt-2 w-full bg-gray-200 rounded h-1">
+                            <div
+                              className="bg-red-500 h-1 rounded"
+                              style={{ width: `${Math.min(100, (watchedProgress[video._id] / video.duration) * 100)}%` }}
+                            />
                           </div>
                         )}
                       </div>

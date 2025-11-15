@@ -20,7 +20,7 @@ import axios from "axios";
 const CourseDetail = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated, isStudent } = useAuth();
+  const { user, isAuthenticated, isStudent, isAdmin } = useAuth();
   const [course, setCourse] = useState(null);
   const [videos, setVideos] = useState([]);
   const [materials, setMaterials] = useState([]);
@@ -37,10 +37,16 @@ const CourseDetail = () => {
 
   useEffect(() => {
     fetchCourseDetails();
-    if (isAuthenticated && isStudent) {
-      checkEnrollment();
+    if (isAuthenticated) {
+      if (isAdmin) {
+        setIsEnrolled(true);
+        fetchVideos();
+        fetchMaterials();
+      } else if (isStudent) {
+        checkEnrollment();
+      }
     }
-  }, [courseId, isAuthenticated, isStudent]);
+  }, [courseId, isAuthenticated, isStudent, isAdmin]);
 
   const fetchCourseDetails = async () => {
     try {
@@ -101,7 +107,7 @@ const CourseDetail = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `${API_BASE_URL}/courses/${courseId}/materials`,
+        `${API_BASE_URL}/documents/courses/${courseId}/materials`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -113,6 +119,29 @@ const CourseDetail = () => {
       }
     } catch (error) {
       // ignore
+    }
+  };
+
+  const downloadWithAuth = async (documentId, filename) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE_URL}/documents/stream/${documentId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        console.error("Download failed", res.status, await res.text());
+        alert("Download failed");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download error", err);
     }
   };
 
@@ -234,18 +263,12 @@ const CourseDetail = () => {
             {/* Course Overview */}
             <div className="bg-white rounded-lg shadow p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <Star className="w-5 h-5 text-yellow-500 fill-current" />
-                  <span className="text-sm text-gray-600">
-                    4.8 (1,234 reviews)
-                  </span>
-                </div>
                 <span className="text-2xl font-bold text-gray-900">
                   ₹{course.price.toLocaleString()}
                 </span>
               </div>
 
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 truncate">
                 {course.title}
               </h2>
 
@@ -285,7 +308,7 @@ const CourseDetail = () => {
                     {course.features.map((feature, index) => (
                       <div
                         key={index}
-                        className="flex items-center text-sm text-gray-600"
+                        className="flex items-center text-sm text-gray-600 break-words"
                       >
                         <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                         {feature}
@@ -321,14 +344,15 @@ const CourseDetail = () => {
               )}
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row flex-wrap gap-4">
                 {isEnrolled ? (
                   <button
                     onClick={() => navigate(`/course/${courseId}/videos`)}
                     className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center"
                   >
                     <Play className="w-5 h-5 mr-2" />
-                    Start Learning
+                    <span className="hidden sm:inline">Start Learning</span>
+                    <span className="sm:hidden inline">Start</span>
                   </button>
                 ) : (
                   <button
@@ -336,17 +360,15 @@ const CourseDetail = () => {
                     className="flex-1 bg-yellow-400 text-gray-900 py-3 px-6 rounded-lg font-semibold hover:bg-yellow-500 transition-colors flex items-center justify-center"
                   >
                     <BookOpen className="w-5 h-5 mr-2" />
-                    Enroll Now - ₹{course.price.toLocaleString()}
+                    <span className="hidden sm:inline">Enroll Now - ₹{course.price.toLocaleString()}</span>
+                    <span className="sm:hidden inline">Enroll</span>
                   </button>
                 )}
-                <button className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:border-gray-400 transition-colors">
-                  Add to Wishlist
-                </button>
               </div>
             </div>
 
             {/* Course Curriculum */}
-            {isEnrolled && videos.length > 0 && (
+            {isEnrolled && videos.length > 0 ? (
               <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Course Curriculum
@@ -362,7 +384,7 @@ const CourseDetail = () => {
                           <Play className="w-4 h-4 text-blue-600" />
                         </div>
                         <div>
-                          <h4 className="font-medium text-gray-900">
+                          <h4 className="font-medium text-gray-900 truncate">
                             {video.title}
                           </h4>
                           {video.duration > 0 && (
@@ -387,6 +409,13 @@ const CourseDetail = () => {
                   ))}
                 </div>
               </div>
+            ) : (
+              isEnrolled && (
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Course Curriculum</h3>
+                  <p className="text-gray-600">No videos available for this course.</p>
+                </div>
+              )
             )}
           </div>
 
@@ -421,6 +450,38 @@ const CourseDetail = () => {
                   <span className="font-semibold">English</span>
                 </div>
               </div>
+            </div>
+
+            {/* Materials Card */}
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Materials</h3>
+              {materials.length > 0 ? (
+                <div className="space-y-3">
+                  {materials.map((m) => (
+                    <div key={m._id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <div>
+                        <h4 className="font-medium text-gray-900 truncate">{m.title}</h4>
+                        {m.description && <p className="text-sm text-gray-600">{m.description}</p>}
+                      </div>
+                      {isEnrolled || isAdmin ? (
+                        <button
+                          onClick={() => downloadWithAuth(m._id, m.originalName)}
+                          className="text-blue-600 hover:text-blue-800 font-medium flex items-center whitespace-nowrap"
+                          title="Download"
+                        >
+                          <Download className="w-4 h-4 mr-2" /> <span className="hidden sm:inline">Download</span>
+                        </button>
+                      ) : (
+                        <div className="text-yellow-700 text-sm flex items-center">
+                          <Lock className="w-4 h-4 mr-2" /> Purchase to download
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No materials available.</p>
+              )}
             </div>
 
             {/* Instructor Card */}

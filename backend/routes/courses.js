@@ -2,6 +2,7 @@ const express = require("express");
 const Course = require("../models/Course");
 const Video = require("../models/Video");
 const Student = require("../models/Student");
+const Document = require("../models/Document");
 const {
   verifyToken,
   requireAdmin,
@@ -184,41 +185,23 @@ router.get("/:id/materials", verifyToken, requireStudent, async (req, res) => {
   try {
     const courseId = req.params.id;
     const userId = req.user._id;
-    const userType = req.userType;
 
-    // Admin has access to all courses
-    if (userType === "admin") {
-      const course = await Course.findById(courseId).select("materials title");
-      if (!course) {
-        return res.status(404).json({ error: "Course not found" });
+    if (req.userType !== "admin") {
+      const student = await Student.findById(userId);
+      if (!student) return res.status(404).json({ error: "Student not found" });
+      const isEnrolled = student.enrolledCourses.some(
+        (e) => e.course.toString() === courseId && e.paymentStatus === "paid"
+      );
+      if (!isEnrolled) {
+        return res.status(403).json({ error: "Access denied" });
       }
-      return res.json({ success: true, materials: course.materials || [] });
     }
 
-    const student = await Student.findById(userId);
-    if (!student) {
-      return res.status(404).json({ error: "Student not found" });
-    }
+    const materials = await Document.find({ course: courseId, isActive: true })
+      .sort({ order: 1, createdAt: 1 })
+      .select("title description mimeType originalName fileUrl");
 
-    const isEnrolled = student.enrolledCourses.some(
-      (enrollment) =>
-        enrollment.course.toString() === courseId &&
-        enrollment.paymentStatus === "paid"
-    );
-
-    if (!isEnrolled) {
-      return res.status(403).json({
-        error:
-          "Access denied. You must be enrolled in this course to view materials.",
-      });
-    }
-
-    const course = await Course.findById(courseId).select("materials title");
-    if (!course) {
-      return res.status(404).json({ error: "Course not found" });
-    }
-
-    res.json({ success: true, materials: course.materials || [] });
+    res.json({ success: true, materials });
   } catch (error) {
     console.error("Fetch course materials error:", error);
     res.status(500).json({ error: "Failed to fetch course materials" });
@@ -646,6 +629,48 @@ router.delete(
     } catch (error) {
       console.error("Delete video error:", error);
       res.status(500).json({ error: "Failed to delete video" });
+    }
+  }
+);
+
+// Save student video progress
+router.patch(
+  "/:courseId/videos/:videoId/progress",
+  verifyToken,
+  requireStudent,
+  async (req, res) => {
+    try {
+      const { courseId, videoId } = req.params;
+      const { timestamp } = req.body;
+
+      if (timestamp === undefined || Number.isNaN(Number(timestamp))) {
+        return res.status(400).json({ error: "Timestamp is required" });
+      }
+
+      const student = await Student.findById(req.user._id);
+      if (!student) return res.status(404).json({ error: "Student not found" });
+
+      const isEnrolled = student.enrolledCourses.some(
+        (e) => e.course.toString() === courseId && e.paymentStatus === "paid"
+      );
+      if (!isEnrolled) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // Support both Mongoose Map and plain object
+      if (student.watchedProgress && typeof student.watchedProgress.set === "function") {
+        student.watchedProgress.set(videoId, Number(timestamp));
+      } else {
+        student.watchedProgress = student.watchedProgress || {};
+        student.watchedProgress[videoId] = Number(timestamp);
+      }
+
+      await student.save();
+
+      res.json({ success: true, message: "Progress saved" });
+    } catch (error) {
+      console.error("Save progress error:", error);
+      res.status(500).json({ error: "Failed to save progress" });
     }
   }
 );

@@ -1,5 +1,6 @@
 const cloudinary = require('cloudinary').v2;
 const streamifier = require('streamifier');
+const axios = require('axios');
 
 class CloudinaryService {
     constructor() {
@@ -153,6 +154,53 @@ class CloudinaryService {
     }
 
     /**
+     * Upload raw file (PDF/DOCX/ZIP/PPT) to Cloudinary
+     */
+    async uploadRaw(file, folder = 'courses/materials') {
+        try {
+            console.log(`Uploading raw file to Cloudinary: ${file.originalname}`);
+
+            return new Promise((resolve, reject) => {
+                const uploadStream = cloudinary.uploader.upload_stream(
+                    {
+                        resource_type: 'raw',
+                        folder: folder,
+                        use_filename: true,
+                        unique_filename: true,
+                        overwrite: false,
+                    },
+                    (error, result) => {
+                        if (error) {
+                            console.error('Cloudinary raw upload error:', error);
+                            reject({
+                                success: false,
+                                error: error.message || 'Upload failed',
+                            });
+                        } else {
+                            console.log('Raw file upload successful:', result.secure_url);
+                            resolve({
+                                success: true,
+                                url: result.secure_url,
+                                publicId: result.public_id,
+                                format: result.format,
+                                bytes: result.bytes,
+                            });
+                        }
+                    }
+                );
+
+                streamifier.createReadStream(file.buffer).pipe(uploadStream);
+            });
+        } catch (error) {
+            console.error('Cloudinary raw upload error:', error);
+            return {
+                success: false,
+                error: error.message,
+            };
+        }
+    }
+
+    /**
      * Delete resource from Cloudinary
      */
     async deleteResource(publicId, resourceType = 'video') {
@@ -254,6 +302,82 @@ class CloudinaryService {
                 { fetch_format: format },
             ],
         });
+    }
+
+    /**
+     * Generate raw download URL with attachment flag
+     */
+    getRawDownloadUrl(publicId, originalName) {
+        try {
+            if (!publicId || !originalName) {
+                throw new Error('publicId and originalName are required');
+            }
+
+            const lastSlash = publicId.lastIndexOf('/');
+            const base = lastSlash === -1 ? publicId : publicId.slice(lastSlash + 1);
+            const prefix = lastSlash === -1 ? '' : publicId.slice(0, lastSlash + 1);
+            const baseWithoutExt = base.replace(/\.[^/.]+$/, '');
+            const normalizedPublicId = prefix + baseWithoutExt;
+
+            const encodedName = encodeURIComponent(originalName);
+
+            console.log("🔥 GENERATING CLOUDINARY RAW URL:", { publicId, originalName, normalizedPublicId, encodedName });
+
+            const url = cloudinary.url(normalizedPublicId, {
+                resource_type: 'raw',
+                type: 'upload',
+                flags: `attachment:${encodedName}`,
+            });
+
+            console.log("🔗 FINAL CLOUDINARY URL:", url);
+            return url;
+        } catch (error) {
+            console.error('Cloudinary RAW download URL error:', { publicId, originalName, error: error.message });
+            return null;
+        }
+    }
+
+    /**
+     * Find a working RAW download URL for Cloudinary
+     */
+    async findWorkingRawUrl(publicId, originalName) {
+        try {
+            const lastSlash = publicId.lastIndexOf('/');
+            const base = lastSlash === -1 ? publicId : publicId.slice(lastSlash + 1);
+            const prefix = lastSlash === -1 ? '' : publicId.slice(0, lastSlash + 1);
+            const baseWithoutExt = base.replace(/\.[^/.]+$/, '');
+            const normalizedPublicId = prefix + baseWithoutExt;
+
+            const safe = (originalName || 'download')
+                .replace(/["']/g, '')
+                .replace(/[^\w.\-() ]+/g, '')
+                .trim();
+            const encoded = encodeURIComponent(safe);
+
+            const resource = await cloudinary.api.resource(normalizedPublicId, { resource_type: 'raw' });
+            const candidates = [
+                cloudinary.url(normalizedPublicId, { resource_type: 'raw', type: 'upload', flags: `attachment:${encoded}`, sign_url: false }),
+                cloudinary.url(normalizedPublicId, { resource_type: 'raw', type: 'upload', flags: `attachment:${encoded}`, sign_url: true, secure: true }),
+                cloudinary.url(normalizedPublicId, { resource_type: 'raw', type: 'upload', sign_url: true, secure: true }),
+                resource?.secure_url,
+            ].filter(Boolean);
+
+            const diagnostics = [];
+            for (const url of candidates) {
+                try {
+                    const test = await axios.get(url, { responseType: 'stream', validateStatus: null });
+                    if (test && test.status === 200) {
+                        return { success: true, url };
+                    }
+                    diagnostics.push({ url, status: test?.status, statusText: test?.statusText });
+                } catch (e) {
+                    diagnostics.push({ url, error: e.message });
+                }
+            }
+            return { success: false, diagnostics };
+        } catch (error) {
+            return { success: false, diagnostics: [{ error: error.message }] };
+        }
     }
 
     /**

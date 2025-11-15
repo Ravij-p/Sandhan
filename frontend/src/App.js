@@ -25,10 +25,14 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import AuthModal from "./components/auth/AuthModal";
 import StudentDashboard from "./components/student/StudentDashboard";
 import AdminDashboard from "./components/admin/AdminDashboard";
+import AdminLayout from "./components/admin/AdminLayout";
+import AdminStudentsPage from "./components/admin/AdminStudentsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CourseList from "./components/courses/CourseList";
 import CourseDetail from "./components/courses/CourseDetail";
 import VideoPlayer from "./components/courses/VideoPlayer";
+import CourseContent from "./components/student/CourseContent";
+import CourseMaterials from "./components/student/CourseMaterials";
 import AdminCoursePage from "./components/admin/AdminCoursePage";
 import CreateCoursePage from "./components/admin/CreateCoursePage";
 import AdminTestSeriesManagement from "./components/admin/AdminTestSeriesManagement";
@@ -92,7 +96,7 @@ const AppContent = () => {
     fetchAds();
   }, []);
   const Navigation = () => (
-    <nav className="fixed top-8 left-0 right-0 z-40 bg-[#f9dc41] shadow-md px-4">
+    <nav className="fixed top-8 left-0 right-0 z-50 bg-[#f9dc41] shadow-md px-4">
       <div className="container mx-auto flex items-center justify-between py-2 sm:py-3">
         <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
           <img
@@ -254,30 +258,34 @@ const AppContent = () => {
             </button>
 
             {isCoursesDropdownOpen && (
-              <div className="flex flex-col pl-4 space-y-1">
-                <button
-                  onClick={() => {
-                    navigate("/courses");
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="w-full text-left px-2 py-1 text-gray-700 hover:bg-gray-100"
-                >
-                  All Courses
-                </button>
-                {["/gpsc", "/upsc"].map((path, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      navigate(path);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="w-full text-left px-2 py-1 text-gray-700 hover:bg-gray-100"
-                  >
-                    {path.slice(1).toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            )}
+                  <div className="flex flex-col pl-4 space-y-1">
+                    <button
+                      onClick={() => {
+                        navigate("/courses");
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full text-left px-2 py-1 text-gray-700 hover:bg-gray-100"
+                    >
+                      All Courses
+                    </button>
+                    {loadingCourses ? (
+                      <div className="px-2 py-1 text-gray-500 text-sm">Loading...</div>
+                    ) : (
+                      courses.map((course) => (
+                        <button
+                          key={course._id}
+                          onClick={() => {
+                            navigate(`/course/${course._id}`);
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className="w-full text-left px-2 py-1 text-gray-700 hover:bg-gray-100"
+                        >
+                          {course.title}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
           </div>
 
           <NavLink
@@ -432,7 +440,7 @@ const AppContent = () => {
   };
   const CourseCards = () => {
     // Use real courses from database, fallback to static if loading or empty
-    const displayCourses = courses.length > 0 ? courses.slice(0, 6) : (loadingCourses ? [] : courseCards);
+    const displayCourses = courses.slice(0, 6);
     const isFromDB = courses.length > 0;
 
     if (loadingCourses && courses.length === 0) {
@@ -607,8 +615,24 @@ const AppContent = () => {
         <Route
           path="/course/:courseId/video/:videoId"
           element={
-            <ProtectedRoute requireStudent={true}>
+            <ProtectedRoute>
               <VideoPlayer />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/course/:courseId/videos"
+          element={
+            <ProtectedRoute>
+              <CourseContent />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/course/:courseId/materials"
+          element={
+            <ProtectedRoute>
+              <CourseMaterials />
             </ProtectedRoute>
           }
         />
@@ -626,7 +650,9 @@ const AppContent = () => {
           path="/admin"
           element={
             <ProtectedRoute requireAdmin={true}>
-              <AdminDashboard />
+              <AdminLayout>
+                <AdminDashboard />
+              </AdminLayout>
             </ProtectedRoute>
           }
         />
@@ -634,7 +660,9 @@ const AppContent = () => {
           path="/admin/approvals"
           element={
             <ProtectedRoute requireAdmin={true}>
-              <AdminUpiApprovals />
+              <AdminLayout>
+                <AdminUpiApprovals />
+              </AdminLayout>
             </ProtectedRoute>
           }
         />
@@ -642,7 +670,9 @@ const AppContent = () => {
           path="/admin/courses"
           element={
             <ProtectedRoute requireAdmin={true}>
-              <AdminCoursePage />
+              <AdminLayout>
+                <AdminCoursePage />
+              </AdminLayout>
             </ProtectedRoute>
           }
         />
@@ -650,7 +680,9 @@ const AppContent = () => {
           path="/admin/courses/new"
           element={
             <ProtectedRoute requireAdmin={true}>
-              <CreateCoursePage />
+              <AdminLayout>
+                <CreateCoursePage />
+              </AdminLayout>
             </ProtectedRoute>
           }
         />
@@ -658,7 +690,19 @@ const AppContent = () => {
           path="/admin/test-series"
           element={
             <ProtectedRoute requireAdmin={true}>
-              <AdminTestSeriesManagement />
+              <AdminLayout>
+                <AdminTestSeriesManagement />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/students"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminLayout>
+                <AdminStudentsPage />
+              </AdminLayout>
             </ProtectedRoute>
           }
         />

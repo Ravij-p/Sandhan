@@ -81,13 +81,18 @@ const studentSchema = new mongoose.Schema(
         },
       },
     ],
+    watchedProgress: {
+      type: Map,
+      of: Number,
+      default: {},
+    },
     isActive: {
       type: Boolean,
       default: true,
     },
     lastLogin: {
       type: Date,
-    },
+    }
   },
   {
     timestamps: true,

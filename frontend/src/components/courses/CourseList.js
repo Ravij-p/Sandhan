@@ -175,9 +175,12 @@ const CourseList = () => {
                   )}
 
                   {/* Action Button */}
-                  <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center">
+                  <button
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center whitespace-nowrap"
+                    title="View Course"
+                  >
                     <BookOpen className="w-5 h-5 mr-2" />
-                    View Course Details
+                    <span className="hidden sm:inline">View Course Details</span>
                   </button>
                 </div>
               </div>
@@ -198,15 +201,19 @@ const CourseList = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={() => navigate("/")}
-                className="px-6 py-3 bg-yellow-400 text-gray-900 rounded-lg font-semibold hover:bg-yellow-500 transition-colors"
+                className="px-6 py-3 bg-yellow-400 text-gray-900 rounded-lg font-semibold hover:bg-yellow-500 transition-colors flex items-center whitespace-nowrap"
+                title="Browse"
               >
-                Browse All Courses
+                <BookOpen className="w-5 h-5 mr-2" />
+                <span className="hidden sm:inline">Browse All Courses</span>
               </button>
               <button
                 onClick={() => navigate("/about")}
-                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:border-gray-400 transition-colors"
+                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:border-gray-400 transition-colors flex items-center whitespace-nowrap"
+                title="About"
               >
-                Learn More
+                <Users className="w-5 h-5 mr-2" />
+                <span className="hidden sm:inline">Learn More</span>
               </button>
             </div>
           </div>

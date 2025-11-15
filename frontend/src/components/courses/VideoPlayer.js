@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -17,7 +17,7 @@ import axios from "axios";
 const VideoPlayer = () => {
   const { courseId, videoId } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated, isStudent } = useAuth();
+  const { user, isAuthenticated, isStudent, isAdmin } = useAuth();
   const [course, setCourse] = useState(null);
   const [videos, setVideos] = useState([]);
   const [currentVideo, setCurrentVideo] = useState(null);
@@ -29,18 +29,20 @@ const VideoPlayer = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [resumeTime, setResumeTime] = useState(0);
+  const lastSavedRef = useRef(0);
 
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
 
   useEffect(() => {
-    if (!isAuthenticated || !isStudent) {
+    if (!isAuthenticated) {
       navigate("/");
       return;
     }
 
     checkEnrollment();
-  }, [courseId, isAuthenticated, isStudent, navigate]);
+  }, [courseId, isAuthenticated, isStudent, isAdmin, navigate]);
 
   useEffect(() => {
     if (isEnrolled && videoId) {
@@ -50,6 +52,12 @@ const VideoPlayer = () => {
 
   const checkEnrollment = async () => {
     try {
+      if (isAdmin) {
+        setIsEnrolled(true);
+        await fetchCourseVideos();
+        if (videoId) await fetchVideoDetails();
+        return;
+      }
       const response = await axios.get(`${API_BASE_URL}/payments/enrollments`);
       const enrollments = response.data.enrollments;
       const enrolled = enrollments.some(
@@ -70,8 +78,11 @@ const VideoPlayer = () => {
 
   const fetchCourseVideos = async () => {
     try {
+      const token = localStorage.getItem("token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const response = await axios.get(
-        `${API_BASE_URL}/courses/${courseId}/videos`
+        `${API_BASE_URL}/courses/${courseId}/videos`,
+        { headers }
       );
       setCourse(response.data.course);
       setVideos(response.data.videos);
@@ -83,11 +94,21 @@ const VideoPlayer = () => {
 
   const fetchVideoDetails = async () => {
     try {
+      const token = localStorage.getItem("token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const response = await axios.get(
-        `${API_BASE_URL}/courses/${courseId}/videos/${videoId}`
+        `${API_BASE_URL}/courses/${courseId}/videos/${videoId}`,
+        { headers }
       );
       setCurrentVideo(response.data.video);
-      setVideoUrl(response.data.signedUrl);
+      setVideoUrl(response.data.video?.videoUrl);
+
+      if (isStudent) {
+        const profileRes = await axios.get(`${API_BASE_URL}/auth/profile`, { headers });
+        const progress = profileRes.data?.user?.watchedProgress || {};
+        const resume = progress[videoId] || 0;
+        setResumeTime(resume);
+      }
     } catch (error) {
       console.error("Error fetching video details:", error);
       setError("Failed to load video");
@@ -118,10 +139,25 @@ const VideoPlayer = () => {
     }
   };
 
-  const handleTimeUpdate = () => {
+  const handleTimeUpdate = async () => {
     const video = document.getElementById("video-player");
     if (video) {
       setCurrentTime(video.currentTime);
+      const now = Date.now();
+      if (isStudent && now - lastSavedRef.current > 5000) {
+        lastSavedRef.current = now;
+        try {
+          const token = localStorage.getItem("token");
+          const headers = token ? { Authorization: `Bearer ${token}` } : {};
+          await axios.patch(
+            `${API_BASE_URL}/courses/${courseId}/videos/${videoId}/progress`,
+            { timestamp: Math.floor(video.currentTime) },
+            { headers }
+          );
+        } catch (e) {
+          // ignore
+        }
+      }
     }
   };
 
@@ -129,6 +165,9 @@ const VideoPlayer = () => {
     const video = document.getElementById("video-player");
     if (video) {
       setDuration(video.duration);
+      if (resumeTime && resumeTime < video.duration) {
+        video.currentTime = resumeTime;
+      }
     }
   };
 

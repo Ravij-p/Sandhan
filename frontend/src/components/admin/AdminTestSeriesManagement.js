@@ -314,20 +314,22 @@ const AdminTestSeriesManagement = () => {
               <button
                 onClick={() => fetchTestSeries(true)}
                 disabled={refreshing}
-                className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
+                className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg whitespace-nowrap"
+                title="Refresh"
               >
                 <RefreshCw
                   size={16}
                   className={refreshing ? "animate-spin" : ""}
                 />
-                <span>Refresh</span>
+                <span className="hidden sm:inline">Refresh</span>
               </button>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-yellow-400 text-[#163233] rounded-lg hover:bg-yellow-500 font-medium"
+                className="flex items-center space-x-2 px-4 py-2 bg-yellow-400 text-[#163233] rounded-lg hover:bg-yellow-500 font-medium whitespace-nowrap"
+                title="Add Test Series"
               >
                 <Plus size={16} />
-                <span>Add Test Series</span>
+                <span className="hidden sm:inline">Add</span>
               </button>
             </div>
           </div>

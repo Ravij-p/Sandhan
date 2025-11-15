@@ -486,4 +486,244 @@ router.post("/create-admin", async (req, res) => {
   }
 });
 
+// Auto-discovered admin features for frontend UI
+router.get("/features", verifyToken, requireAdmin, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      features: [
+        {
+          key: "manage_courses",
+          title: "Manage Courses",
+          description: "Create, update, delete courses and configure payments",
+          icon: "BookOpen",
+          path: "/admin/courses",
+          api: [
+            { method: "GET", route: "/api/admin/courses" },
+            { method: "POST", route: "/api/courses" },
+            { method: "PUT", route: "/api/courses/:id" },
+            { method: "DELETE", route: "/api/courses/:id" }
+          ]
+        },
+        {
+          key: "manage_videos",
+          title: "Manage Videos",
+          description: "Upload, reorder, update and delete course videos",
+          icon: "Play",
+          path: "/admin/courses",
+          api: [
+            { method: "GET", route: "/api/admin/courses/:courseId/videos" },
+            { method: "POST", route: "/api/courses/:id/videos" },
+            { method: "PUT", route: "/api/courses/:courseId/videos/:videoId" },
+            { method: "DELETE", route: "/api/courses/:courseId/videos/:videoId" }
+          ]
+        },
+        {
+          key: "manage_documents",
+          title: "Course Documents",
+          description: "Upload and manage PDFs and resources for courses",
+          icon: "FileText",
+          path: "/admin/courses",
+          api: [
+            { method: "POST", route: "/api/documents/courses/:courseId" },
+            { method: "GET", route: "/api/documents/courses/:courseId" },
+            { method: "PUT", route: "/api/documents/:documentId" },
+            { method: "DELETE", route: "/api/documents/:documentId" }
+          ]
+        },
+        {
+          key: "upi_approvals",
+          title: "UPI Approvals",
+          description: "Approve or reject pending UPI payment submissions",
+          icon: "ShieldCheck",
+          path: "/admin/approvals",
+          api: [
+            { method: "GET", route: "/api/upi-payments/pending" },
+            { method: "POST", route: "/api/upi-payments/:id/approve" },
+            { method: "POST", route: "/api/upi-payments/:id/reject" }
+          ]
+        },
+        {
+          key: "test_series",
+          title: "Test Series",
+          description: "Create, update and manage test series",
+          icon: "Settings",
+          path: "/admin/test-series",
+          api: [
+            { method: "GET", route: "/api/test-series/admin/all" },
+            { method: "POST", route: "/api/test-series" },
+            { method: "PUT", route: "/api/test-series/:id" },
+            { method: "DELETE", route: "/api/test-series/:id" }
+          ]
+        },
+        {
+          key: "homepage_ads",
+          title: "Homepage Ads",
+          description: "Configure and manage homepage promotional banners",
+          icon: "Image",
+          path: "/admin",
+          api: [
+            { method: "POST", route: "/api/homepage-ads" },
+            { method: "GET", route: "/api/homepage-ads" },
+            { method: "GET", route: "/api/homepage-ads/public/active" }
+          ]
+        }
+      ]
+    });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to fetch admin features" });
+  }
+});
+
+// Enroll a student to a course (admin manual enroll)
+router.post(
+  "/courses/:courseId/students",
+  verifyToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { courseId } = req.params;
+      const { studentId, email, mobile, amount } = req.body;
+      const course = await Course.findById(courseId);
+      if (!course) return res.status(404).json({ error: "Course not found" });
+
+      let student;
+      if (studentId) {
+        student = await Student.findById(studentId);
+      } else if (email || mobile) {
+        student = await Student.findOne({
+          $or: [email ? { email } : null, mobile ? { mobile } : null].filter(Boolean),
+        });
+      }
+      if (!student) return res.status(404).json({ error: "Student not found" });
+
+      const already = student.enrolledCourses.some(
+        (e) => e.course.toString() === courseId && e.paymentStatus === "paid"
+      );
+      if (already) {
+        return res.status(400).json({ error: "Student already enrolled" });
+      }
+
+      student.enrolledCourses.push({
+        course: courseId,
+        enrolledAt: new Date(),
+        paymentStatus: "paid",
+        receiptNumber: `ADM${Date.now()}`,
+        amount: amount !== undefined ? amount : course.price,
+      });
+      await student.save();
+
+      res.json({ success: true, message: "Student enrolled", studentId: student._id });
+    } catch (e) {
+      console.error("Admin enroll error:", e);
+      res.status(500).json({ error: "Failed to enroll student" });
+    }
+  }
+);
+
+// Remove a student's access to a course
+router.delete(
+  "/courses/:courseId/students/:studentId",
+  verifyToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { courseId, studentId } = req.params;
+      const student = await Student.findById(studentId);
+      if (!student) return res.status(404).json({ error: "Student not found" });
+
+      const before = student.enrolledCourses.length;
+      student.enrolledCourses = student.enrolledCourses.filter(
+        (e) => e.course.toString() !== courseId
+      );
+      if (student.enrolledCourses.length === before) {
+        return res.status(404).json({ error: "Enrollment not found" });
+      }
+      await student.save();
+
+      res.json({ success: true, message: "Access removed" });
+    } catch (e) {
+      console.error("Admin remove access error:", e);
+      res.status(500).json({ error: "Failed to remove access" });
+    }
+  }
+);
+
+// Alias route: add student to course via body payload
+router.post(
+  "/add-student-to-course",
+  verifyToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { courseId, studentId, email, mobile, amount } = req.body;
+      if (!courseId) return res.status(400).json({ error: "courseId is required" });
+
+      const course = await Course.findById(courseId);
+      if (!course) return res.status(404).json({ error: "Course not found" });
+
+      let student;
+      if (studentId) {
+        student = await Student.findById(studentId);
+      } else if (email || mobile) {
+        student = await Student.findOne({
+          $or: [email ? { email } : null, mobile ? { mobile } : null].filter(Boolean),
+        });
+      }
+      if (!student) return res.status(404).json({ error: "Student not found" });
+
+      const already = student.enrolledCourses.some(
+        (e) => e.course.toString() === courseId && e.paymentStatus === "paid"
+      );
+      if (already) return res.status(400).json({ error: "Student already enrolled" });
+
+      student.enrolledCourses.push({
+        course: courseId,
+        enrolledAt: new Date(),
+        paymentStatus: "paid",
+        receiptNumber: `ADM${Date.now()}`,
+        amount: amount !== undefined ? amount : course.price,
+      });
+      await student.save();
+
+      res.json({ success: true, message: "Student enrolled", studentId: student._id });
+    } catch (e) {
+      console.error("Admin enroll alias error:", e);
+      res.status(500).json({ error: "Failed to enroll student" });
+    }
+  }
+);
+
+// Alias route: remove student access from a course
+router.post(
+  "/remove-student-from-course",
+  verifyToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { courseId, studentId } = req.body;
+      if (!courseId || !studentId) {
+        return res.status(400).json({ error: "courseId and studentId are required" });
+      }
+
+      const student = await Student.findById(studentId);
+      if (!student) return res.status(404).json({ error: "Student not found" });
+
+      const before = student.enrolledCourses.length;
+      student.enrolledCourses = student.enrolledCourses.filter(
+        (e) => e.course.toString() !== courseId
+      );
+      if (student.enrolledCourses.length === before) {
+        return res.status(404).json({ error: "Enrollment not found" });
+      }
+      await student.save();
+
+      res.json({ success: true, message: "Access removed" });
+    } catch (e) {
+      console.error("Admin remove access alias error:", e);
+      res.status(500).json({ error: "Failed to remove access" });
+    }
+  }
+);
+
 module.exports = router;
