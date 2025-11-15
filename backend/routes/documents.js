@@ -5,7 +5,7 @@ const Document = require("../models/Document");
 const Course = require("../models/Course");
 const Student = require("../models/Student");
 const { verifyToken, requireAdmin } = require("../middleware/auth");
-const CloudinaryService = require("../services/CloudinaryService");
+const CloudinaryService = require("../services/cloudinaryService");
 
 const router = express.Router();
 
@@ -125,7 +125,9 @@ router.get("/:documentId/download", verifyToken, async (req, res) => {
       if (!student) return res.status(404).json({ error: "Student not found" });
 
       const isEnrolled = student.enrolledCourses.some(
-        (e) => e.course.toString() === document.course._id.toString() && e.paymentStatus === "paid"
+        (e) =>
+          e.course.toString() === document.course._id.toString() &&
+          e.paymentStatus === "paid"
       );
 
       if (!isEnrolled) {
@@ -140,8 +142,8 @@ router.get("/:documentId/download", verifyToken, async (req, res) => {
       document.originalName
     );
 
-    const ext = document.originalName?.split('.').pop();
-    console.log('Document download payload', {
+    const ext = document.originalName?.split(".").pop();
+    console.log("Document download payload", {
       documentId,
       publicId: document.fileName,
       originalName: document.originalName,
@@ -151,7 +153,7 @@ router.get("/:documentId/download", verifyToken, async (req, res) => {
     });
 
     if (!downloadUrl) {
-      return res.status(500).json({ error: 'Could not create URL' });
+      return res.status(500).json({ error: "Could not create URL" });
     }
 
     console.log("📦 Returning download URL to frontend:", downloadUrl);
@@ -243,7 +245,8 @@ router.post(
         req.file,
         `courses/${courseId}/materials`
       );
-      if (!uploadResult.success) return res.status(500).json({ error: "Failed to upload material" });
+      if (!uploadResult.success)
+        return res.status(500).json({ error: "Failed to upload material" });
       const document = await Document.create({
         title: title || req.file.originalname,
         description: description || "",
@@ -270,7 +273,9 @@ router.post(
 router.get("/courses/:courseId/materials", verifyToken, async (req, res) => {
   try {
     const { courseId } = req.params;
-    const docs = await Document.find({ course: courseId, isActive: true }).sort({ order: 1, createdAt: 1 });
+    const docs = await Document.find({ course: courseId, isActive: true }).sort(
+      { order: 1, createdAt: 1 }
+    );
     res.json({ success: true, materials: docs });
   } catch (error) {
     console.error("Fetch materials alias error:", error);
@@ -289,17 +294,21 @@ router.delete(
       const doc = await Document.findById(materialId);
       if (!doc) return res.status(404).json({ error: "Material not found" });
       if (doc.course.toString() !== courseId) {
-        return res.status(400).json({ error: "Material does not belong to the course" });
+        return res
+          .status(400)
+          .json({ error: "Material does not belong to the course" });
       }
       // Delete from Cloudinary (raw)
       if (doc.fileName) {
-        await CloudinaryService.deleteResource(doc.fileName, 'raw');
+        await CloudinaryService.deleteResource(doc.fileName, "raw");
       }
       doc.isActive = false;
       await doc.save();
       const course = await Course.findById(courseId);
       if (course) {
-        course.documents = course.documents.filter((d) => d.toString() !== materialId);
+        course.documents = course.documents.filter(
+          (d) => d.toString() !== materialId
+        );
         await course.save();
       }
       res.json({ success: true, message: "Material deleted" });
@@ -314,28 +323,59 @@ router.delete(
 router.get("/stream/:id", verifyToken, async (req, res) => {
   try {
     const id = req.params.id;
-    if (!id) return res.status(400).json({ success: false, message: "Document id required" });
+    if (!id)
+      return res
+        .status(400)
+        .json({ success: false, message: "Document id required" });
 
     const document = await Document.findById(id).populate("course");
-    if (!document) return res.status(404).json({ success: false, message: "Document not found" });
+    if (!document)
+      return res
+        .status(404)
+        .json({ success: false, message: "Document not found" });
 
     if (req.userType !== "admin") {
       const student = await Student.findById(req.user._id);
-      if (!student) return res.status(404).json({ success: false, message: "Student not found" });
+      if (!student)
+        return res
+          .status(404)
+          .json({ success: false, message: "Student not found" });
       const isEnrolled = student.enrolledCourses.some(
-        (e) => e.course.toString() === document.course._id.toString() && e.paymentStatus === "paid"
+        (e) =>
+          e.course.toString() === document.course._id.toString() &&
+          e.paymentStatus === "paid"
       );
-      if (!isEnrolled) return res.status(403).json({ success: false, message: "Forbidden" });
+      if (!isEnrolled)
+        return res.status(403).json({ success: false, message: "Forbidden" });
     }
 
-    const result = await CloudinaryService.findWorkingRawUrl(document.fileName, document.originalName);
+    const result = await CloudinaryService.findWorkingRawUrl(
+      document.fileName,
+      document.originalName
+    );
     if (!result || !result.success) {
-      return res.status(502).json({ success: false, message: "Failed to construct working Cloudinary URL", diagnostics: result?.diagnostics });
+      return res
+        .status(502)
+        .json({
+          success: false,
+          message: "Failed to construct working Cloudinary URL",
+          diagnostics: result?.diagnostics,
+        });
     }
 
-    const cloudResp = await axios.get(result.url, { responseType: "stream", validateStatus: null });
+    const cloudResp = await axios.get(result.url, {
+      responseType: "stream",
+      validateStatus: null,
+    });
     if (!cloudResp || cloudResp.status !== 200) {
-      return res.status(502).json({ success: false, message: "Failed to fetch file from Cloudinary", cloudinaryStatus: cloudResp?.status, cloudinaryMessage: cloudResp?.statusText });
+      return res
+        .status(502)
+        .json({
+          success: false,
+          message: "Failed to fetch file from Cloudinary",
+          cloudinaryStatus: cloudResp?.status,
+          cloudinaryMessage: cloudResp?.statusText,
+        });
     }
 
     const filename = document.originalName || "download";
@@ -345,8 +385,14 @@ router.get("/stream/:id", verifyToken, async (req, res) => {
 
     cloudResp.data.pipe(res);
   } catch (err) {
-    console.error("Stream download error:", err && err.message ? err.message : err);
-    if (!res.headersSent) res.status(500).json({ success: false, message: "Server error streaming file" });
+    console.error(
+      "Stream download error:",
+      err && err.message ? err.message : err
+    );
+    if (!res.headersSent)
+      res
+        .status(500)
+        .json({ success: false, message: "Server error streaming file" });
   }
 });
 
