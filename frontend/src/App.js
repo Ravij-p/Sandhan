@@ -105,14 +105,14 @@ const AppContent = () => {
       <div className="container mx-auto flex items-center justify-between py-2 sm:py-3">
         <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
           <img
-            src="/download.png"
+            src="/IAS-Logo-Design.svg"
             alt="Logo"
-            width={40}
-            height={40}
+            width={160}
+            height={80}
             className="sm:w-12 sm:h-12 flex-shrink-0"
           />
           <h1 className="text-sm sm:text-lg lg:text-xl font-bold text-gray-800 truncate">
-            Tushti IAS
+            TUSHTI IAS
           </h1>
         </div>
         <div className="hidden lg:flex items-center space-x-6">
