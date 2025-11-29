@@ -30,14 +30,13 @@ router.post("/initiate", verifyToken, requireStudent, async (req, res) => {
       return res.status(404).json({ error: "Course not found" });
     }
 
-    const pa = "7600837122@hdfcbank";
-    const pn = process.env.UPI_NAME || "Tushti IAS";
-    const upiUrl = buildUpiUrl({
-      pa,
-      pn,
-      am: course.price,
-      tn: `Payment for ${course.title} - ${req.user.email || "student"}`,
-    });
+    const upiUrl = `upi://pay?pa=${
+      process.env.UPI_VPA || "7600837122@hdfcbank"
+    }&pn=Tushti IAS&am=${course.price}&cu=INR&tn=Payment for ${
+      course.title
+    } - ${req.user.email || "student"}`;
+    const pa = process.env.UPI_VPA;
+    const pn = "Tushti IAS";
 
     res.json({
       success: true,
@@ -88,11 +87,9 @@ router.post("/submit-utr", verifyToken, requireStudent, async (req, res) => {
       status: "pending",
     });
     if (existingPending) {
-      return res
-        .status(400)
-        .json({
-          error: "A pending verification already exists for this course",
-        });
+      return res.status(400).json({
+        error: "A pending verification already exists for this course",
+      });
     }
 
     // Create UPI payment record

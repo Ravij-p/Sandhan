@@ -154,22 +154,12 @@ const CourseDetail = () => {
       return;
     }
     setShowEnrollmentModal(true);
-    // Build UPI URL from course payment config or fallback to course price
-    let upi = "";
-    if (course?.payment?.upiLink) {
-      upi = course.payment.upiLink
-        .replace("{course_amount}", String(course.price || 0))
-        .replace("{course}", encodeURIComponent(course.title || "Course"))
-        .replace(
-          "{student_email}",
-          encodeURIComponent(user?.email || "student@tushtiias.com")
-        );
-    } else {
-      const pa = "7600837122@hdfcbank";
-      const pn = "TushtiIAS";
-      const am = String(course.price || 0);
-      upi = `upi://pay?pa=${pa}&pn=${pn}&am=${am}&cu=INR`;
-    }
+    const amount = String(course?.price || 0);
+    const upi = `upi://pay?pa=${
+      process.env.UPI_VPA || "7600837122@hdfcbank"
+    }&pn=Tushti IAS&am=${amount}&cu=INR&tn=Payment for ${
+      course?.title || "Course"
+    } - ${user?.email || "student@tushtiias.com"}`;
     setUpiUrl(upi);
     setShowQrCode(true);
   };

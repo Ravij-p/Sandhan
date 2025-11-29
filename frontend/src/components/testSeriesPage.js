@@ -63,17 +63,11 @@ export const TestSeriesPage = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Prepare UPI link
-      const pa = process.env.REACT_APP_UPI_VPA || "xyz@xyz";
-      const pn = process.env.REACT_APP_UPI_NAME || "Tushti IAS";
-      const params = new URLSearchParams({
-        pa,
-        pn,
-        am: String(amount),
-        cu: "INR",
-        tn: `Test Series ${series?.title || "Payment"}`,
-      });
-      const upiUrl = `upi://pay?${params.toString()}`;
+      const upiUrl = `upi://pay?pa=${
+        process.env.UPI_VPA || "7600837122@hdfcbank"
+      }&pn=Tushti IAS&am=${amount}&cu=INR&tn=Payment for ${
+        series?.title || "Test Series"
+      } - ${user?.email || ""}`;
 
       if (isMobile()) {
         // Mobile → open UPI app
