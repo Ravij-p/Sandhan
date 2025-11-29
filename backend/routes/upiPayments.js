@@ -2,7 +2,11 @@ const express = require("express");
 const Course = require("../models/Course");
 const Student = require("../models/Student");
 const UpiPayment = require("../models/UpiPayment");
-const { verifyToken, requireStudent, requireAdmin } = require("../middleware/auth");
+const {
+  verifyToken,
+  requireStudent,
+  requireAdmin,
+} = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -26,7 +30,7 @@ router.post("/initiate", verifyToken, requireStudent, async (req, res) => {
       return res.status(404).json({ error: "Course not found" });
     }
 
-    const pa = process.env.UPI_VPA || "xyz@xyz";
+    const pa = "7600837122@hdfcbank";
     const pn = process.env.UPI_NAME || "Tushti IAS";
     const upiUrl = buildUpiUrl({
       pa,
@@ -52,7 +56,9 @@ router.post("/submit-utr", verifyToken, requireStudent, async (req, res) => {
   try {
     const { courseId, utrNumber } = req.body;
     if (!courseId || !utrNumber) {
-      return res.status(400).json({ error: "courseId and utrNumber are required" });
+      return res
+        .status(400)
+        .json({ error: "courseId and utrNumber are required" });
     }
 
     const course = await Course.findById(courseId);
@@ -70,7 +76,9 @@ router.post("/submit-utr", verifyToken, requireStudent, async (req, res) => {
       (e) => e.course.toString() === courseId && e.paymentStatus === "paid"
     );
     if (alreadyEnrolled) {
-      return res.status(400).json({ error: "You already have access to this course" });
+      return res
+        .status(400)
+        .json({ error: "You already have access to this course" });
     }
 
     // Prevent duplicate pending submission for same student/course
@@ -80,7 +88,11 @@ router.post("/submit-utr", verifyToken, requireStudent, async (req, res) => {
       status: "pending",
     });
     if (existingPending) {
-      return res.status(400).json({ error: "A pending verification already exists for this course" });
+      return res
+        .status(400)
+        .json({
+          error: "A pending verification already exists for this course",
+        });
     }
 
     // Create UPI payment record
@@ -113,7 +125,11 @@ router.post("/submit-utr", verifyToken, requireStudent, async (req, res) => {
     });
   } catch (error) {
     console.error("Submit UTR error:", error);
-    if (error.code === 11000 && error.keyPattern && error.keyPattern.utrNumber) {
+    if (
+      error.code === 11000 &&
+      error.keyPattern &&
+      error.keyPattern.utrNumber
+    ) {
       return res.status(400).json({ error: "This UTR is already submitted" });
     }
     res.status(500).json({ error: "Failed to submit UTR" });
@@ -163,7 +179,9 @@ router.post("/:id/approve", verifyToken, requireAdmin, async (req, res) => {
 
     // Enroll student if not already enrolled
     const isEnrolled = student.enrolledCourses.some(
-      (e) => e.course.toString() === payment.courseId.toString() && e.paymentStatus === "paid"
+      (e) =>
+        e.course.toString() === payment.courseId.toString() &&
+        e.paymentStatus === "paid"
     );
 
     if (!isEnrolled) {
@@ -215,13 +233,20 @@ router.post("/:id/reject", verifyToken, requireAdmin, async (req, res) => {
 router.get("/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const payment = await UpiPayment.findById(id).populate("courseId", "title price");
+    const payment = await UpiPayment.findById(id).populate(
+      "courseId",
+      "title price"
+    );
     if (!payment) return res.status(404).json({ error: "Receipt not found" });
 
     // Allow owner or admin
-    const isOwner = payment.studentId && payment.studentId.toString() === req.user._id.toString();
-    const isAdmin = req.user.role === "admin" || req.user.role === "super_admin";
-    if (!isOwner && !isAdmin) return res.status(403).json({ error: "Forbidden" });
+    const isOwner =
+      payment.studentId &&
+      payment.studentId.toString() === req.user._id.toString();
+    const isAdmin =
+      req.user.role === "admin" || req.user.role === "super_admin";
+    if (!isOwner && !isAdmin)
+      return res.status(403).json({ error: "Forbidden" });
 
     res.json({
       success: true,
@@ -244,5 +269,3 @@ router.get("/:id", verifyToken, async (req, res) => {
 });
 
 module.exports = router;
-
-

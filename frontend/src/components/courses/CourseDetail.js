@@ -125,9 +125,12 @@ const CourseDetail = () => {
   const downloadWithAuth = async (documentId, filename) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE_URL}/documents/stream/${documentId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/documents/stream/${documentId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (!res.ok) {
         console.error("Download failed", res.status, await res.text());
         alert("Download failed");
@@ -162,7 +165,7 @@ const CourseDetail = () => {
           encodeURIComponent(user?.email || "student@tushtiias.com")
         );
     } else {
-      const pa = "merchant@upi";
+      const pa = "7600837122@hdfcbank";
       const pn = "TushtiIAS";
       const am = String(course.price || 0);
       upi = `upi://pay?pa=${pa}&pn=${pn}&am=${am}&cu=INR`;
@@ -200,7 +203,6 @@ const CourseDetail = () => {
       alert("Failed to initiate UPI payment");
     }
   };
-
 
   if (loading) {
     return (
@@ -360,7 +362,9 @@ const CourseDetail = () => {
                     className="flex-1 bg-yellow-400 text-gray-900 py-3 px-6 rounded-lg font-semibold hover:bg-yellow-500 transition-colors flex items-center justify-center"
                   >
                     <BookOpen className="w-5 h-5 mr-2" />
-                    <span className="hidden sm:inline">Enroll Now - ₹{course.price.toLocaleString()}</span>
+                    <span className="hidden sm:inline">
+                      Enroll Now - ₹{course.price.toLocaleString()}
+                    </span>
                     <span className="sm:hidden inline">Enroll</span>
                   </button>
                 )}
@@ -412,8 +416,12 @@ const CourseDetail = () => {
             ) : (
               isEnrolled && (
                 <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Course Curriculum</h3>
-                  <p className="text-gray-600">No videos available for this course.</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Course Curriculum
+                  </h3>
+                  <p className="text-gray-600">
+                    No videos available for this course.
+                  </p>
                 </div>
               )
             )}
@@ -454,22 +462,36 @@ const CourseDetail = () => {
 
             {/* Materials Card */}
             <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Materials</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Materials
+              </h3>
               {materials.length > 0 ? (
                 <div className="space-y-3">
                   {materials.map((m) => (
-                    <div key={m._id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                    <div
+                      key={m._id}
+                      className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
+                    >
                       <div>
-                        <h4 className="font-medium text-gray-900 truncate">{m.title}</h4>
-                        {m.description && <p className="text-sm text-gray-600">{m.description}</p>}
+                        <h4 className="font-medium text-gray-900 truncate">
+                          {m.title}
+                        </h4>
+                        {m.description && (
+                          <p className="text-sm text-gray-600">
+                            {m.description}
+                          </p>
+                        )}
                       </div>
                       {isEnrolled || isAdmin ? (
                         <button
-                          onClick={() => downloadWithAuth(m._id, m.originalName)}
+                          onClick={() =>
+                            downloadWithAuth(m._id, m.originalName)
+                          }
                           className="text-blue-600 hover:text-blue-800 font-medium flex items-center whitespace-nowrap"
                           title="Download"
                         >
-                          <Download className="w-4 h-4 mr-2" /> <span className="hidden sm:inline">Download</span>
+                          <Download className="w-4 h-4 mr-2" />{" "}
+                          <span className="hidden sm:inline">Download</span>
                         </button>
                       ) : (
                         <div className="text-yellow-700 text-sm flex items-center">
@@ -509,7 +531,9 @@ const CourseDetail = () => {
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Enroll in Course</h2>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Enroll in Course
+                </h2>
                 <button
                   onClick={() => setShowEnrollmentModal(false)}
                   className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -537,7 +561,8 @@ const CourseDetail = () => {
                     {isMobile() ? "Pay via UPI" : "Generate QR Code"}
                   </button>
                   <p className="text-xs text-gray-600">
-                    Course will be accessible after admin approval. No UTR is required.
+                    Course will be accessible after admin approval. No UTR is
+                    required.
                   </p>
                   <button
                     onClick={() => setShowEnrollmentModal(false)}
@@ -549,18 +574,41 @@ const CourseDetail = () => {
               ) : (
                 <div className="space-y-4">
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-yellow-900 mb-1">Payment Submitted</h3>
+                    <h3 className="font-semibold text-yellow-900 mb-1">
+                      Payment Submitted
+                    </h3>
                     <p className="text-sm text-yellow-800">
-                      Your payment is under verification. Within 24 hours, you’ll get access to your course.
+                      Your payment is under verification. Within 24 hours,
+                      you’ll get access to your course.
                     </p>
                   </div>
                   <div className="text-sm bg-gray-50 rounded-lg p-4">
-                    <div className="flex justify-between"><span className="text-gray-600">Name:</span><span className="font-medium">{receipt.name}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-600">Email:</span><span className="font-medium">{receipt.email}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-600">Phone:</span><span className="font-medium">{receipt.phone}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-600">Course:</span><span className="font-medium">{receipt.course}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-600">Amount:</span><span className="font-medium">₹{receipt.amount}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-600">Status:</span><span className="font-medium capitalize">{receipt.status}</span></div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Name:</span>
+                      <span className="font-medium">{receipt.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Email:</span>
+                      <span className="font-medium">{receipt.email}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Phone:</span>
+                      <span className="font-medium">{receipt.phone}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Course:</span>
+                      <span className="font-medium">{receipt.course}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Amount:</span>
+                      <span className="font-medium">₹{receipt.amount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Status:</span>
+                      <span className="font-medium capitalize">
+                        {receipt.status}
+                      </span>
+                    </div>
                   </div>
                   <button
                     onClick={() => setShowEnrollmentModal(false)}
