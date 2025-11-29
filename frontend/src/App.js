@@ -69,7 +69,8 @@ const AppContent = () => {
     const fetchCourses = async () => {
       try {
         const response = await fetch(
-          `${process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api"
+          `${
+            process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api"
           }/courses`
         );
         const data = await response.json();
@@ -86,7 +87,11 @@ const AppContent = () => {
     fetchCourses();
     const fetchAds = async () => {
       try {
-        const res = await fetch(`${process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api"}/homepage-ads/public/active`);
+        const res = await fetch(
+          `${
+            process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api"
+          }/homepage-ads/public/active`
+        );
         const data = await res.json();
         if (data.success) setAds(data.ads);
       } catch (e) {
@@ -100,7 +105,7 @@ const AppContent = () => {
       <div className="container mx-auto flex items-center justify-between py-2 sm:py-3">
         <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
           <img
-            src="/Logo.svg"
+            src="/download.png"
             alt="Logo"
             width={40}
             height={40}
@@ -114,9 +119,10 @@ const AppContent = () => {
           <NavLink
             to="/"
             className={({ isActive }) =>
-              `px-3 py-2 rounded ${isActive
-                ? "bg-gray-800 text-white"
-                : "text-gray-800 hover:bg-gray-200"
+              `px-3 py-2 rounded ${
+                isActive
+                  ? "bg-gray-800 text-white"
+                  : "text-gray-800 hover:bg-gray-200"
               }`
             }
           >
@@ -154,8 +160,9 @@ const AppContent = () => {
                         navigate(`/course/${course._id}`);
                         setIsCoursesDropdownOpen(false);
                       }}
-                      className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${idx === courses.length - 1 ? "rounded-b-lg" : ""
-                        }`}
+                      className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${
+                        idx === courses.length - 1 ? "rounded-b-lg" : ""
+                      }`}
                     >
                       {course.title}
                     </button>
@@ -168,9 +175,10 @@ const AppContent = () => {
           <NavLink
             to="/testSeries"
             className={({ isActive }) =>
-              `px-3 py-2 rounded ${isActive
-                ? "bg-gray-800 text-white"
-                : "text-gray-800 hover:bg-gray-200"
+              `px-3 py-2 rounded ${
+                isActive
+                  ? "bg-gray-800 text-white"
+                  : "text-gray-800 hover:bg-gray-200"
               }`
             }
           >
@@ -179,9 +187,10 @@ const AppContent = () => {
           <NavLink
             to="/about"
             className={({ isActive }) =>
-              `px-3 py-2 rounded ${isActive
-                ? "bg-gray-800 text-white"
-                : "text-gray-800 hover:bg-gray-200"
+              `px-3 py-2 rounded ${
+                isActive
+                  ? "bg-gray-800 text-white"
+                  : "text-gray-800 hover:bg-gray-200"
               }`
             }
           >
@@ -258,42 +267,45 @@ const AppContent = () => {
             </button>
 
             {isCoursesDropdownOpen && (
-                  <div className="flex flex-col pl-4 space-y-1">
+              <div className="flex flex-col pl-4 space-y-1">
+                <button
+                  onClick={() => {
+                    navigate("/courses");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full text-left px-2 py-1 text-gray-700 hover:bg-gray-100"
+                >
+                  All Courses
+                </button>
+                {loadingCourses ? (
+                  <div className="px-2 py-1 text-gray-500 text-sm">
+                    Loading...
+                  </div>
+                ) : (
+                  courses.map((course) => (
                     <button
+                      key={course._id}
                       onClick={() => {
-                        navigate("/courses");
+                        navigate(`/course/${course._id}`);
                         setIsMobileMenuOpen(false);
                       }}
                       className="w-full text-left px-2 py-1 text-gray-700 hover:bg-gray-100"
                     >
-                      All Courses
+                      {course.title}
                     </button>
-                    {loadingCourses ? (
-                      <div className="px-2 py-1 text-gray-500 text-sm">Loading...</div>
-                    ) : (
-                      courses.map((course) => (
-                        <button
-                          key={course._id}
-                          onClick={() => {
-                            navigate(`/course/${course._id}`);
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className="w-full text-left px-2 py-1 text-gray-700 hover:bg-gray-100"
-                        >
-                          {course.title}
-                        </button>
-                      ))
-                    )}
-                  </div>
+                  ))
                 )}
+              </div>
+            )}
           </div>
 
           <NavLink
             to="/testSeries"
             className={({ isActive }) =>
-              `px-3 py-2 rounded ${isActive
-                ? "bg-gray-800 text-white"
-                : "text-gray-800 hover:bg-gray-200"
+              `px-3 py-2 rounded ${
+                isActive
+                  ? "bg-gray-800 text-white"
+                  : "text-gray-800 hover:bg-gray-200"
               }`
             }
             onClick={() => setIsMobileMenuOpen(false)}
@@ -303,9 +315,10 @@ const AppContent = () => {
           <NavLink
             to="/about"
             className={({ isActive }) =>
-              `px-3 py-2 rounded ${isActive
-                ? "bg-gray-800 text-white"
-                : "text-gray-800 hover:bg-gray-200"
+              `px-3 py-2 rounded ${
+                isActive
+                  ? "bg-gray-800 text-white"
+                  : "text-gray-800 hover:bg-gray-200"
               }`
             }
             onClick={() => setIsMobileMenuOpen(false)}
@@ -429,8 +442,9 @@ const AppContent = () => {
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
-                className={`w-3 h-3 rounded-full transition-colors ${currentSlide === index ? "bg-yellow-400" : "bg-gray-300"
-                  }`}
+                className={`w-3 h-3 rounded-full transition-colors ${
+                  currentSlide === index ? "bg-yellow-400" : "bg-gray-300"
+                }`}
               />
             ))}
           </div>
@@ -483,7 +497,8 @@ const AppContent = () => {
                   talati: "bg-orange-100",
                   ethics: "bg-indigo-100",
                 };
-                const courseColor = categoryColors[course.category] || "bg-gray-100";
+                const courseColor =
+                  categoryColors[course.category] || "bg-gray-100";
 
                 return (
                   <div
@@ -501,10 +516,15 @@ const AppContent = () => {
                       {course.description}
                     </p>
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-lg font-semibold" style={{ color: "#163233" }}>
+                      <span
+                        className="text-lg font-semibold"
+                        style={{ color: "#163233" }}
+                      >
                         ₹{course.price.toLocaleString()}
                       </span>
-                      <span className="text-sm text-gray-600">{course.duration}</span>
+                      <span className="text-sm text-gray-600">
+                        {course.duration}
+                      </span>
                     </div>
                     <button
                       className="px-4 py-2 rounded-lg font-medium transition-colors hover:shadow-md w-full"
@@ -572,11 +592,21 @@ const AppContent = () => {
         <div className="py-8" style={{ backgroundColor: "#fafaee" }}>
           <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {ads.map((ad) => (
-              <a key={ad._id} href={ad.redirectUrl} className="bg-white rounded-xl shadow hover:shadow-lg transition p-4 block">
-                <img src={ad.imageUrl} alt={ad.title} className="w-full h-40 object-cover rounded" />
+              <a
+                key={ad._id}
+                href={ad.redirectUrl}
+                className="bg-white rounded-xl shadow hover:shadow-lg transition p-4 block"
+              >
+                <img
+                  src={ad.imageUrl}
+                  alt={ad.title}
+                  className="w-full h-40 object-cover rounded"
+                />
                 <h3 className="mt-3 font-semibold text-gray-900">{ad.title}</h3>
                 {ad.description && (
-                  <p className="text-sm text-gray-600 line-clamp-2">{ad.description}</p>
+                  <p className="text-sm text-gray-600 line-clamp-2">
+                    {ad.description}
+                  </p>
                 )}
               </a>
             ))}
