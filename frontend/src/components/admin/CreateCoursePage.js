@@ -20,6 +20,9 @@ const CreateCoursePage = () => {
     price: "",
     category: "gpsc",
     duration: "12 months",
+    language: "english",
+    courseMode: "online",
+    location: "",
     features: [],
   });
   const [newFeature, setNewFeature] = useState("");
@@ -211,6 +214,61 @@ const CreateCoursePage = () => {
                 placeholder="e.g., 12 months, 6 weeks, Self-paced"
               />
             </div>
+
+            {/* Language */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Language
+              </label>
+              <select
+                value={course.language}
+                onChange={(e) =>
+                  setCourse({ ...course, language: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="gujarati">Gujarati</option>
+                <option value="hindi">Hindi</option>
+                <option value="english">English</option>
+              </select>
+            </div>
+
+            {/* Course Mode */}
+            {false && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Course Mode
+                </label>
+                <select
+                  value={course.courseMode}
+                  onChange={(e) =>
+                    setCourse({ ...course, courseMode: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="online">Online</option>
+                  <option value="offline">Offline</option>
+                </select>
+              </div>
+            )}
+
+            {false && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Location *
+                </label>
+                <input
+                  type="text"
+                  value={course.location}
+                  onChange={(e) =>
+                    setCourse({ ...course, location: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter center location"
+                  required
+                />
+              </div>
+            )}
 
             {/* Course Features */}
             <div>

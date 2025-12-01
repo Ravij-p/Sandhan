@@ -141,19 +141,22 @@ router.get("/students/:id", verifyToken, requireAdmin, async (req, res) => {
 // Update student status
 router.put("/students/:id", verifyToken, requireAdmin, async (req, res) => {
   try {
-    const { isActive } = req.body;
+    const { isActive, mailedCredentials, enrollmentMailSent } = req.body;
 
     const student = await Student.findById(req.params.id);
     if (!student) {
       return res.status(404).json({ error: "Student not found" });
     }
 
-    student.isActive = isActive;
+    if (typeof isActive === "boolean") student.isActive = isActive;
+    if (typeof mailedCredentials === "boolean") student.mailedCredentials = mailedCredentials;
+    if (typeof enrollmentMailSent === "boolean") student.enrollmentMailSent = enrollmentMailSent;
     await student.save();
 
     res.json({
       success: true,
-      message: "Student status updated successfully",
+      message: "Student updated successfully",
+      student,
     });
   } catch (error) {
     console.error("Update student error:", error);

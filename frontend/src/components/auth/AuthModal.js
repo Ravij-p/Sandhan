@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import LoginForm from './LoginForm';
-import RegisterForm from './RegisterForm';
 import AdminLoginForm from './AdminLoginForm';
 
 const AuthModal = ({ isOpen, onClose }) => {
-  const [currentForm, setCurrentForm] = useState('login'); // 'login', 'register', 'admin'
+  const [currentForm, setCurrentForm] = useState('login'); // 'login', 'admin'
 
   if (!isOpen) return null;
 
@@ -16,13 +15,6 @@ const AuthModal = ({ isOpen, onClose }) => {
             onClose={onClose}
             onSwitchToRegister={() => setCurrentForm('register')}
             onSwitchToAdmin={() => setCurrentForm('admin')}
-          />
-        );
-      case 'register':
-        return (
-          <RegisterForm
-            onClose={onClose}
-            onSwitchToLogin={() => setCurrentForm('login')}
           />
         );
       case 'admin':

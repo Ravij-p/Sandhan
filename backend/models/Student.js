@@ -81,6 +81,18 @@ const studentSchema = new mongoose.Schema(
         },
       },
     ],
+    tempPassword: {
+      type: String,
+      default: null,
+    },
+    mailedCredentials: {
+      type: Boolean,
+      default: false,
+    },
+    enrollmentMailSent: {
+      type: Boolean,
+      default: false,
+    },
     watchedProgress: {
       type: Map,
       of: Number,
@@ -92,7 +104,7 @@ const studentSchema = new mongoose.Schema(
     },
     lastLogin: {
       type: Date,
-    }
+    },
   },
   {
     timestamps: true,

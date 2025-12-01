@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Eye, EyeOff, User, Lock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-const LoginForm = ({ onClose, onSwitchToRegister, onSwitchToAdmin }) => {
+const LoginForm = ({ onClose, onSwitchToAdmin }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -111,15 +111,6 @@ const LoginForm = ({ onClose, onSwitchToRegister, onSwitchToAdmin }) => {
         </form>
 
         <div className="mt-4 sm:mt-6 text-center space-y-2">
-          <p className="text-xs sm:text-sm text-gray-600">
-            Don't have an account?{' '}
-            <button
-              onClick={onSwitchToRegister}
-              className="text-blue-600 hover:text-blue-800 font-medium"
-            >
-              Register here
-            </button>
-          </p>
           <p className="text-xs sm:text-sm text-gray-600">
             Admin?{' '}
             <button

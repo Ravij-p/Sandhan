@@ -60,9 +60,17 @@ router.get("/", async (req, res) => {
       .sort({ createdAt: -1 });
 
     console.log(`Found ${courses.length} courses`);
+    const normalized = courses.map((c) => {
+      const obj = c.toObject();
+      obj.courseMode =
+        obj.courseMode || obj.deliveryMode || obj.courseType || "online";
+      obj.language = obj.language || obj.lang || "english";
+      obj.location = obj.location || obj.center || obj.city || "";
+      return obj;
+    });
     res.json({
       success: true,
-      courses,
+      courses: normalized,
     });
   } catch (error) {
     console.error("Fetch courses error:", error);
@@ -94,8 +102,13 @@ router.get("/:id", async (req, res) => {
     console.log(`Found ${videos.length} videos for this course`);
 
     // Add videos to the course object
+    const base = course.toObject();
+    base.courseMode =
+      base.courseMode || base.deliveryMode || base.courseType || "online";
+    base.language = base.language || base.lang || "english";
+    base.location = base.location || base.center || base.city || "";
     const courseWithVideos = {
-      ...course.toObject(),
+      ...base,
       videos: videos,
     };
 
@@ -299,8 +312,20 @@ router.get(
 router.post("/", verifyToken, requireAdmin, async (req, res) => {
   try {
     console.log("Creating new course with data:", req.body);
-    const { title, description, price, category, duration, features } =
-      req.body;
+    const {
+      title,
+      description,
+      price,
+      category,
+      duration,
+      features,
+      language,
+      courseMode,
+      deliveryMode,
+      mode,
+      courseType,
+      location,
+    } = req.body;
 
     // Validation
     if (!title || !description || !price || !category) {
@@ -310,12 +335,35 @@ router.post("/", verifyToken, requireAdmin, async (req, res) => {
       });
     }
 
+    const resolvedMode = (
+      courseMode ||
+      deliveryMode ||
+      mode ||
+      courseType ||
+      "online"
+    ).toLowerCase();
+    console.log("Resolved course mode (create):", resolvedMode);
+    if (!["online", "offline"].includes(resolvedMode)) {
+      return res
+        .status(400)
+        .json({ error: "course mode must be 'online' or 'offline'" });
+    }
+
+    if (resolvedMode === "offline" && !location) {
+      return res
+        .status(400)
+        .json({ error: "location is required for offline courses" });
+    }
+
     const course = new Course({
       title,
       description,
       price,
       category,
       duration: duration || "12 months",
+      language: language || "english",
+      courseMode: resolvedMode,
+      location: resolvedMode === "offline" ? location || "" : "",
       features: features || [],
       createdBy: req.user._id,
     });
@@ -338,12 +386,19 @@ router.post("/", verifyToken, requireAdmin, async (req, res) => {
 // Admin: Update course
 router.put("/:id", verifyToken, requireAdmin, async (req, res) => {
   try {
+    console.log("Updating course with data:", req.body);
     const {
       title,
       description,
       price,
       category,
       duration,
+      language,
+      courseMode,
+      deliveryMode,
+      mode,
+      courseType,
+      location,
       features,
       isActive,
     } = req.body;
@@ -360,6 +415,25 @@ router.put("/:id", verifyToken, requireAdmin, async (req, res) => {
     if (category) course.category = category;
     if (duration) course.duration = duration;
     if (features) course.features = features;
+    if (language) course.language = language;
+    const incomingMode = courseMode || deliveryMode || mode || courseType;
+    if (incomingMode) {
+      const normalizedMode = String(incomingMode).toLowerCase();
+      console.log("Resolved course mode (update):", normalizedMode);
+      if (!["online", "offline"].includes(normalizedMode)) {
+        return res
+          .status(400)
+          .json({ error: "course mode must be 'online' or 'offline'" });
+      }
+      if (normalizedMode === "offline" && !location && !course.location) {
+        return res
+          .status(400)
+          .json({ error: "location is required for offline courses" });
+      }
+      course.courseMode = normalizedMode;
+      if (normalizedMode === "online") course.location = "";
+    }
+    if (location !== undefined) course.location = location;
     if (isActive !== undefined) course.isActive = isActive;
 
     await course.save();

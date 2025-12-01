@@ -1,7 +1,7 @@
 // c:\Sandhan\frontend\src\components\admin\AdminStudentsPage.js
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Search, UserPlus, UserMinus } from "lucide-react";
+import { Search, UserPlus, UserMinus, Eye, EyeOff } from "lucide-react";
 
 const AdminStudentsPage = () => {
   const [students, setStudents] = useState([]);
@@ -15,6 +15,7 @@ const AdminStudentsPage = () => {
     mobile: "",
     amount: "",
   });
+  const [passwordVisible, setPasswordVisible] = useState({});
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
 
@@ -44,6 +45,50 @@ const AdminStudentsPage = () => {
     } catch {}
   };
 
+  const togglePasswordVisibility = (id) => {
+    setPasswordVisible((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const updateMailedFlag = async (studentId, mailed) => {
+    try {
+      await axios.put(`${API_BASE_URL}/admin/students/${studentId}`, {
+        mailedCredentials: mailed,
+      });
+      setStudents((prev) =>
+        prev.map((s) =>
+          s._id === studentId ? { ...s, mailedCredentials: mailed } : s
+        )
+      );
+      setCourseStudents((prev) =>
+        prev.map((s) =>
+          s._id === studentId ? { ...s, mailedCredentials: mailed } : s
+        )
+      );
+    } catch (e) {
+      alert(e.response?.data?.error || "Failed to update mailed flag");
+    }
+  };
+
+  const updateEnrollmentMailFlagByEmail = async (email, mailed) => {
+    try {
+      const student = students.find((s) => s.email === email);
+      if (!student) {
+        alert("Student not found for this email");
+        return;
+      }
+      await axios.put(`${API_BASE_URL}/admin/students/${student._id}`, {
+        enrollmentMailSent: mailed,
+      });
+      setStudents((prev) =>
+        prev.map((s) =>
+          s._id === student._id ? { ...s, enrollmentMailSent: mailed } : s
+        )
+      );
+    } catch (e) {
+      alert(e.response?.data?.error || "Failed to update enrollment mail flag");
+    }
+  };
+
   const handleSelectCourse = (id) => {
     setSelectedCourse(id);
     if (id) fetchCourseStudents(id);
@@ -62,12 +107,16 @@ const AdminStudentsPage = () => {
         mobile: enrollForm.mobile || undefined,
         amount: enrollForm.amount ? Number(enrollForm.amount) : undefined,
       };
-      const res = await axios.post(`${API_BASE_URL}/admin/add-student-to-course`, payload);
+      const res = await axios.post(
+        `${API_BASE_URL}/admin/add-student-to-course`,
+        payload
+      );
       await fetchCourseStudents(selectedCourse);
       setEnrollForm({ email: "", mobile: "", amount: "" });
       alert("Student enrolled successfully");
     } catch (e) {
-      const msg = e.response?.data?.error || e.message || "Failed to enroll student";
+      const msg =
+        e.response?.data?.error || e.message || "Failed to enroll student";
       alert(msg);
     }
   };
@@ -79,10 +128,13 @@ const AdminStudentsPage = () => {
     }
     if (!window.confirm("Remove access for this student?")) return;
     try {
-      const res = await axios.post(`${API_BASE_URL}/admin/remove-student-from-course`, {
-        courseId: selectedCourse,
-        studentId,
-      });
+      const res = await axios.post(
+        `${API_BASE_URL}/admin/remove-student-from-course`,
+        {
+          courseId: selectedCourse,
+          studentId,
+        }
+      );
       await fetchCourseStudents(selectedCourse);
       alert("Access removed");
     } catch (e) {
@@ -128,6 +180,35 @@ const AdminStudentsPage = () => {
                 <div className="font-medium">{s.name}</div>
                 <div className="text-sm text-gray-600">{s.email}</div>
                 <div className="text-sm text-gray-600">{s.mobile}</div>
+                <div className="mt-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-600">Password:</span>
+                    {s.tempPassword ? (
+                      <>
+                        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                          {passwordVisible[s._id]
+                            ? s.tempPassword
+                            : "•••••••••"}
+                        </span>
+                        <button
+                          onClick={() => togglePasswordVisibility(s._id)}
+                          className="text-xs px-2 py-1 border rounded hover:bg-gray-50"
+                          title={passwordVisible[s._id] ? "Hide" : "Show"}
+                        >
+                          {passwordVisible[s._id] ? (
+                            <EyeOff size={14} />
+                          ) : (
+                            <Eye size={14} />
+                          )}
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-xs text-gray-500">
+                        No password assigned
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
         </div>
@@ -182,6 +263,57 @@ const AdminStudentsPage = () => {
           >
             <UserPlus size={16} className="mr-2" /> Enroll
           </button>
+          {selectedCourse &&
+            enrollForm.email &&
+            (() => {
+              const courseName =
+                courses.find((c) => c._id === selectedCourse)?.title ||
+                "Course";
+              const student = students.find(
+                (s) => s.email === enrollForm.email
+              );
+              const password = student?.tempPassword || "";
+              const subject = `Tushti IAS : Enrollment Confirmation and Login Credentials`;
+              const body = `Dear Student,\n\nYou have been successfully enrolled in the course ${courseName}.\n\nHere are your login credentials:\nEmail: ${enrollForm.email}\nPassword: ${password}\n\nPlease keep these details confidential.\n\nRegards,\nTushti IAS Support Team`;
+              const href = `mailto:${
+                enrollForm.email
+              }?subject=${encodeURIComponent(
+                subject
+              )}&body=${encodeURIComponent(body)}`;
+              return (
+                <a href={href} target="_blank" rel="noopener noreferrer">
+                  <button
+                    className="px-4 py-2 border rounded hover:bg-gray-50"
+                    title="Send Enrollment & Credentials Mail"
+                  >
+                    Send Enrollment & Credentials Mail
+                  </button>
+                </a>
+              );
+            })()}
+          {selectedCourse &&
+            enrollForm.email &&
+            (() => {
+              const student = students.find(
+                (s) => s.email === enrollForm.email
+              );
+              const checked = !!student?.enrollmentMailSent;
+              return (
+                <label className="flex items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(e) =>
+                      updateEnrollmentMailFlagByEmail(
+                        enrollForm.email,
+                        e.target.checked
+                      )
+                    }
+                  />
+                  Mail Sent
+                </label>
+              );
+            })()}
         </div>
 
         {selectedCourse && (
@@ -197,8 +329,47 @@ const AdminStudentsPage = () => {
                 >
                   <div>
                     <div className="font-medium">{cs.name}</div>
-                    <div className="text-sm text-gray-600">
-                      {cs.email} · {cs.mobile}
+                    <div className="text-sm text-gray-600 flex items-center justify-between">
+                      <span>
+                        {cs.email} · {cs.mobile}
+                      </span>
+                      <label className="flex items-center gap-1 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={!!cs.mailedCredentials}
+                          onChange={(e) =>
+                            updateMailedFlag(cs._id, e.target.checked)
+                          }
+                        />
+                        Mailed
+                      </label>
+                    </div>
+                    <div className="mt-1 flex items-center gap-2 flex-wrap">
+                      <span className="text-xs text-gray-600">Password:</span>
+                      {cs.tempPassword ? (
+                        <>
+                          <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                            {passwordVisible[cs._id]
+                              ? cs.tempPassword
+                              : "•••••••••"}
+                          </span>
+                          <button
+                            onClick={() => togglePasswordVisibility(cs._id)}
+                            className="text-xs px-2 py-1 border rounded hover:bg-gray-50"
+                            title={passwordVisible[cs._id] ? "Hide" : "Show"}
+                          >
+                            {passwordVisible[cs._id] ? (
+                              <EyeOff size={14} />
+                            ) : (
+                              <Eye size={14} />
+                            )}
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-500">
+                          No password assigned
+                        </span>
+                      )}
                     </div>
                   </div>
                   <button

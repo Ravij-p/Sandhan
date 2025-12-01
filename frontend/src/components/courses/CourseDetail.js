@@ -6,7 +6,6 @@ import {
   Play,
   Clock,
   Users,
-  Star,
   ArrowLeft,
   Lock,
   CheckCircle,
@@ -31,6 +30,9 @@ const CourseDetail = () => {
   const [upiUrl, setUpiUrl] = useState("");
   const [showQrCode, setShowQrCode] = useState(false);
   const [receipt, setReceipt] = useState(null);
+  const [buyerEmail, setBuyerEmail] = useState("");
+  const [buyerPhone, setBuyerPhone] = useState("");
+  const [toastMsg, setToastMsg] = useState("");
 
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
@@ -149,47 +151,51 @@ const CourseDetail = () => {
   };
 
   const handleEnroll = () => {
-    if (!isAuthenticated) {
-      alert("Please login to enroll in this course");
-      return;
-    }
     setShowEnrollmentModal(true);
-    const amount = String(course?.price || 0);
-    const upi = `upi://pay?pa=${
-      process.env.UPI_VPA || "7600837122@hdfcbank"
-    }&pn=Tushti IAS&am=${String(
-      Number(amount) + 0.18 * Number(amount)
-    )}&cu=INR&tn=Payment for ${course?.title || "Course"} - ${
-      user?.email || "student@tushtiias.com"
-    }`;
-    setUpiUrl(upi);
-    setShowQrCode(true);
   };
 
   const isMobile = () => /Mobi|Android/i.test(navigator.userAgent);
 
   const handleInitiateUpi = async () => {
-    if (!isAuthenticated || !isStudent) {
-      alert("Please login as a student to enroll");
+    if (!buyerEmail || !buyerPhone) {
+      alert("Please enter email and 10-digit phone number");
+      return;
+    }
+    if (!/^\d{10}$/.test(buyerPhone)) {
+      alert("Phone number must be 10 digits");
       return;
     }
     try {
-      const token = localStorage.getItem("token");
       const res = await axios.post(
-        `${API_BASE_URL}/upi-payments/initiate`,
-        { courseId },
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${API_BASE_URL}/upi-payments/initiate-public`,
+        {
+          courseId,
+          email: buyerEmail,
+          phone: buyerPhone,
+          name: buyerEmail.split("@")[0],
+        }
       );
       if (res.data.success) {
         setUpiUrl(res.data.upiUrl);
-
+        setToastMsg(
+          "After paying, your login credentials will be emailed to you. Please check your email."
+        );
+        setTimeout(() => setToastMsg(""), 6000);
         if (isMobile()) {
-          // Mobile: Open UPI app directly
           window.location.href = res.data.upiUrl;
         } else {
-          // Desktop: Show QR code
           setShowQrCode(true);
         }
+        setReceipt({
+          name: res.data.preCreated?.studentId
+            ? buyerEmail.split("@")[0]
+            : buyerEmail,
+          email: buyerEmail,
+          phone: buyerPhone,
+          course: course.title,
+          amount: course.price,
+          status: "pending",
+        });
       }
     } catch (e) {
       alert("Failed to initiate UPI payment");
@@ -256,20 +262,22 @@ const CourseDetail = () => {
           <div className="lg:col-span-2">
             {/* Course Overview */}
             <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-2xl font-bold text-gray-900">
-                  ₹{course.price.toLocaleString()}
-                </span>
-              </div>
-
               <h2 className="text-2xl font-bold text-gray-900 mb-4 truncate">
                 {course.title}
               </h2>
 
-              <p className="text-gray-600 mb-6">{course.description}</p>
+              <p className="text-gray-600 mb-2">{course.description}</p>
+              <p className="mb-6">
+                <span className="text-3xl font-extrabold text-gray-900">
+                  ₹{course.price.toLocaleString()}
+                </span>
+                <span className="ml-2 text-gray-700 font-medium">
+                  + 18% GST
+                </span>
+              </p>
 
-              {/* Course Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              {/* Course Stats (ratings removed) */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">
                     {videos.length}
@@ -285,10 +293,6 @@ const CourseDetail = () => {
                 <div className="text-center">
                   <div className="text-2xl font-bold text-purple-600">50</div>
                   <div className="text-sm text-gray-600">Students</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">4.8</div>
-                  <div className="text-sm text-gray-600">Rating</div>
                 </div>
               </div>
 
@@ -355,7 +359,7 @@ const CourseDetail = () => {
                   >
                     <BookOpen className="w-5 h-5 mr-2" />
                     <span className="hidden sm:inline">
-                      Enroll Now - ₹{course.price.toLocaleString()}
+                      Enroll Now – ₹{course.price.toLocaleString()} + 18% GST
                     </span>
                     <span className="sm:hidden inline">Enroll</span>
                   </button>
@@ -442,12 +446,8 @@ const CourseDetail = () => {
                   <span className="font-semibold">{videos.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Level</span>
-                  <span className="font-semibold">Beginner</span>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-gray-600">Language</span>
-                  <span className="font-semibold">English</span>
+                  <span className="font-semibold">{course.language}</span>
                 </div>
               </div>
             </div>
@@ -534,14 +534,36 @@ const CourseDetail = () => {
                 </button>
               </div>
 
-              <div className="mb-4">
+              <div className="mb-4 space-y-2">
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Course Price</span>
-                    <span className="text-xl font-bold text-gray-900">
-                      ₹{course.price.toLocaleString()}
+                    <span className="text-gray-600">Course</span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      {course.title}
                     </span>
                   </div>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-gray-600">Amount</span>
+                    <span className="text-xl font-bold text-gray-900">
+                      ₹{course.price.toLocaleString()} + 18% GST
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <input
+                    type="email"
+                    value={buyerEmail}
+                    onChange={(e) => setBuyerEmail(e.target.value)}
+                    placeholder="Email ID"
+                    className="px-3 py-2 border rounded"
+                  />
+                  <input
+                    type="tel"
+                    value={buyerPhone}
+                    onChange={(e) => setBuyerPhone(e.target.value)}
+                    placeholder="Phone Number (10 digits)"
+                    className="px-3 py-2 border rounded"
+                  />
                 </div>
               </div>
               {!receipt ? (
@@ -550,12 +572,17 @@ const CourseDetail = () => {
                     onClick={handleInitiateUpi}
                     className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
                   >
-                    {isMobile() ? "Pay via UPI" : "Generate QR Code"}
+                    Pay Now
                   </button>
                   <p className="text-xs text-gray-600">
-                    Course will be accessible after admin approval. No UTR is
-                    required.
+                    After paying, your login credentials will be emailed to you.
+                    Please check your email.
                   </p>
+                  {toastMsg && (
+                    <div className="text-xs text-yellow-800 bg-yellow-50 border border-yellow-200 rounded p-2">
+                      {toastMsg}
+                    </div>
+                  )}
                   <button
                     onClick={() => setShowEnrollmentModal(false)}
                     className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"

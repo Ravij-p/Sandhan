@@ -25,6 +25,21 @@ const courseSchema = new mongoose.Schema(
       type: String,
       default: "12 months",
     },
+    language: {
+      type: String,
+      enum: ["gujarati", "hindi", "english"],
+      default: "english",
+    },
+    courseMode: {
+      type: String,
+      enum: ["online", "offline"],
+      default: "online",
+    },
+    location: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     isActive: {
       type: Boolean,
       default: true,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, Play, Users, Clock, Star } from "lucide-react";
+import { BookOpen, Play, Users, Clock } from "lucide-react";
 import axios from "axios";
 
 const CourseList = () => {
@@ -124,13 +124,12 @@ const CourseList = () => {
                 {/* Course Content */}
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                      {course.category.toUpperCase()}
-                    </span>
-                    <div className="flex items-center text-yellow-500">
-                      <Star className="w-4 h-4 fill-current" />
-                      <span className="ml-1 text-sm text-gray-600">4.8</span>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                        {course.category.toUpperCase()}
+                      </span>
                     </div>
+                    <div className="flex items-center"></div>
                   </div>
 
                   <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2">
@@ -154,6 +153,14 @@ const CourseList = () => {
                     <div className="flex items-center text-sm text-gray-600">
                       <Users className="w-4 h-4 mr-2" />
                       <span>Expert Faculty</span>
+                    </div>
+                    <div className="text-sm text-gray-700">
+                      <div>
+                        <span className="font-medium">Language:</span>
+                        <span className="ml-1 capitalize">
+                          {course.language || "english"}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -180,7 +187,9 @@ const CourseList = () => {
                     title="View Course"
                   >
                     <BookOpen className="w-5 h-5 mr-2" />
-                    <span className="hidden sm:inline">View Course Details</span>
+                    <span className="hidden sm:inline">
+                      View Course Details
+                    </span>
                   </button>
                 </div>
               </div>

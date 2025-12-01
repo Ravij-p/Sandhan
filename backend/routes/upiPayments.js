@@ -50,6 +50,69 @@ router.post("/initiate", verifyToken, requireStudent, async (req, res) => {
   }
 });
 
+// Public: Initiate UPI payment and pre-create student/enrollment without login
+router.post("/initiate-public", async (req, res) => {
+  try {
+    const { courseId, email, phone, name } = req.body;
+    if (!courseId || !email || !phone) {
+      return res
+        .status(400)
+        .json({ error: "courseId, email and phone are required" });
+    }
+
+    const course = await Course.findById(courseId);
+    if (!course || !course.isActive) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    let student = await Student.findOne({ email });
+    let generatedPassword = null;
+    if (!student) {
+      const pwd = Math.random().toString(36).slice(-12);
+      generatedPassword = pwd;
+      student = new Student({
+        name: name || email.split("@")[0],
+        email,
+        mobile: phone,
+        password: pwd,
+        tempPassword: pwd,
+      });
+      await student.save();
+    }
+
+    const alreadyPending = student.enrolledCourses.some(
+      (e) => e.course.toString() === courseId && e.paymentStatus === "pending"
+    );
+    const alreadyPaid = student.enrolledCourses.some(
+      (e) => e.course.toString() === courseId && e.paymentStatus === "paid"
+    );
+
+    if (!alreadyPending && !alreadyPaid) {
+      student.enrolledCourses.push({
+        course: course._id,
+        enrolledAt: new Date(),
+        paymentStatus: "pending",
+        amount: course.price,
+      });
+      await student.save();
+    }
+
+    const amountWithGst = String(
+      Number(course.price) + 0.18 * Number(course.price)
+    );
+    const upiUrl = `upi://pay?pa=${process.env.UPI_VPA}&pn=Tushti IAS&am=${amountWithGst}&cu=INR&tn=Payment for ${course.title} - ${email}`;
+    res.json({
+      success: true,
+      upiUrl,
+      course: { id: course._id, title: course.title, price: course.price },
+      preCreated: { studentId: student._id, tempPassword: generatedPassword },
+    });
+  } catch (error) {
+    console.error("Public UPI initiate error:", error);
+    res.status(500).json({ error: "Failed to initiate UPI payment" });
+  }
+});
+
 // Student: Submit UTR/Transaction ID for verification
 router.post("/submit-utr", verifyToken, requireStudent, async (req, res) => {
   try {
