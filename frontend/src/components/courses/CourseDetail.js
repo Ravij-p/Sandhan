@@ -32,7 +32,10 @@ const CourseDetail = () => {
   const [receipt, setReceipt] = useState(null);
   const [buyerEmail, setBuyerEmail] = useState("");
   const [buyerPhone, setBuyerPhone] = useState("");
+  const [buyerName, setBuyerName] = useState("");
   const [toastMsg, setToastMsg] = useState("");
+  const [showPayLoader, setShowPayLoader] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState("");
 
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
@@ -157,8 +160,8 @@ const CourseDetail = () => {
   const isMobile = () => /Mobi|Android/i.test(navigator.userAgent);
 
   const handleInitiateUpi = async () => {
-    if (!buyerEmail || !buyerPhone) {
-      alert("Please enter email and 10-digit phone number");
+    if (!buyerName || !buyerEmail || !buyerPhone) {
+      alert("Please enter name, email and 10-digit phone number");
       return;
     }
     if (!/^\d{10}$/.test(buyerPhone)) {
@@ -172,7 +175,7 @@ const CourseDetail = () => {
           courseId,
           email: buyerEmail,
           phone: buyerPhone,
-          name: buyerEmail.split("@")[0],
+          name: buyerName,
         }
       );
       if (res.data.success) {
@@ -181,15 +184,18 @@ const CourseDetail = () => {
           "After paying, your login credentials will be emailed to you. Please check your email."
         );
         setTimeout(() => setToastMsg(""), 6000);
-        if (isMobile()) {
-          window.location.href = res.data.upiUrl;
-        } else {
-          setShowQrCode(true);
-        }
+        setPaymentStatus("pending");
+        setShowPayLoader(true);
+        setTimeout(() => {
+          setShowPayLoader(false);
+          if (isMobile()) {
+            window.location.href = res.data.upiUrl;
+          } else {
+            setShowQrCode(true);
+          }
+        }, 1500);
         setReceipt({
-          name: res.data.preCreated?.studentId
-            ? buyerEmail.split("@")[0]
-            : buyerEmail,
+          name: buyerName,
           email: buyerEmail,
           phone: buyerPhone,
           course: course.title,
@@ -231,6 +237,19 @@ const CourseDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-40 sm:pt-36 md:pt-32 lg:pt-28">
+      {showPayLoader && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+            <p className="text-gray-900 font-semibold">
+              Opening Payment App... Do NOT press back.
+            </p>
+            <p className="text-gray-700 mt-2">
+              Please wait while we redirect you.
+            </p>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -449,6 +468,25 @@ const CourseDetail = () => {
                   <span className="text-gray-600">Language</span>
                   <span className="font-semibold">{course.language}</span>
                 </div>
+                {paymentStatus === "pending" && (
+                  <div className="mt-3 text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded p-3">
+                    <p>
+                      Your payment is still pending. If you do not complete the
+                      payment, you cannot access the course. Please make sure
+                      your payment is completed.
+                    </p>
+                    <p>
+                      If payment is successfull , do not worry , you will will
+                      be enrolled within 24 hours.
+                    </p>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="mt-2 text-blue-600 hover:text-blue-800 underline"
+                    >
+                      Not done payment?
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -548,6 +586,15 @@ const CourseDetail = () => {
                       ₹{course.price.toLocaleString()} + 18% GST
                     </span>
                   </div>
+                </div>
+                <div className="mb-3">
+                  <input
+                    type="text"
+                    value={buyerName}
+                    onChange={(e) => setBuyerName(e.target.value)}
+                    placeholder="Full Name"
+                    className="w-full px-3 py-2 border rounded"
+                  />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input

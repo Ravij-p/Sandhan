@@ -78,6 +78,11 @@ router.post("/initiate-public", async (req, res) => {
         tempPassword: pwd,
       });
       await student.save();
+    } else {
+      if (!student.name && name) {
+        student.name = name;
+        await student.save();
+      }
     }
 
     const alreadyPending = student.enrolledCourses.some(

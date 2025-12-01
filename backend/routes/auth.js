@@ -8,11 +8,9 @@ const router = express.Router();
 
 // Generate JWT token
 const generateToken = (userId, userType) => {
-  return jwt.sign(
-    { userId, userType },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
+  return jwt.sign({ userId, userType }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
 };
 
 // Student Registration
@@ -20,39 +18,52 @@ router.post("/student/register", async (req, res) => {
   try {
     const { name, email, mobile, password } = req.body;
 
-    // Validation
-    if (!name || !email || !mobile || !password) {
-      return res.status(400).json({ error: "All fields are required" });
+    // Basic validation for required identifiers
+    if (!name || !email || !mobile) {
+      return res
+        .status(400)
+        .json({ error: "Name, email and mobile are required" });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ error: "Password must be at least 6 characters" });
-    }
-
-    // Check if student already exists
+    // Check if student already exists (by email or mobile)
     const existingStudent = await Student.findOne({
-      $or: [{ email }, { mobile }]
+      $or: [{ email }, { mobile }],
     });
 
     if (existingStudent) {
-      return res.status(400).json({ 
-        error: "Student with this email or mobile already exists" 
+      if (!existingStudent.name && name) {
+        existingStudent.name = name;
+        await existingStudent.save();
+      }
+      const token = generateToken(existingStudent._id, "student");
+      return res.json({
+        success: true,
+        message: "Account already exists. Logged in to your existing account.",
+        token,
+        student: {
+          id: existingStudent._id,
+          name: existingStudent.name,
+          email: existingStudent.email,
+          mobile: existingStudent.mobile,
+        },
       });
     }
 
-    // Create new student
+    // New student path: require a valid password
+    let finalPassword = password;
+    if (!finalPassword || finalPassword.length < 6) {
+      finalPassword = Math.random().toString(36).slice(-12);
+    }
+
     const student = new Student({
       name,
       email,
       mobile,
-      password,
+      password: finalPassword,
     });
-
     await student.save();
 
-    // Generate token
     const token = generateToken(student._id, "student");
-
     res.status(201).json({
       success: true,
       message: "Student registered successfully",
@@ -170,7 +181,7 @@ router.get("/profile", verifyToken, async (req, res) => {
       const student = await Student.findById(req.user._id)
         .populate("enrolledCourses.course", "title description price")
         .select("-password");
-      
+
       res.json({
         success: true,
         user: student,
@@ -178,7 +189,7 @@ router.get("/profile", verifyToken, async (req, res) => {
       });
     } else if (req.userType === "admin") {
       const admin = await Admin.findById(req.user._id).select("-password");
-      
+
       res.json({
         success: true,
         user: admin,
