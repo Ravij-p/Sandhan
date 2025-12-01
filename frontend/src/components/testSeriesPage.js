@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { BookOpen, ShoppingCart, CheckCircle, X } from "lucide-react";
+import { BookOpen, ShoppingCart, CheckCircle, X, Smartphone, Apple } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { QRCodeCanvas } from "qrcode.react";
@@ -36,7 +36,30 @@ export const TestSeriesPage = () => {
     fetchTestSeries();
   }, [fetchTestSeries]);
 
-  const isMobile = () => /Mobi|Android/i.test(navigator.userAgent);
+  const detectOS = () => {
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    if (/android/i.test(ua)) return "android";
+    if (/iPad|iPhone|iPod/.test(ua)) return "ios";
+    return "other";
+  };
+
+  const buildUpiParams = ({ pa, pn, am, tn }) => {
+    const cu = "INR";
+    const params = new URLSearchParams({ pa, pn, am: String(am), cu, tn });
+    return params.toString();
+  };
+
+  const openUpi = (url, series) => {
+    const token = localStorage.getItem("token");
+    axios
+      .post(
+        `${API_BASE_URL}/purchase`,
+        { testSeriesId: series._id, email: user?.email, amount: series?.price || 0 },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      .catch(() => {});
+    window.location.href = url;
+  };
 
   // Handle purchase click
   const handlePurchase = async (testSeriesId) => {
@@ -63,17 +86,19 @@ export const TestSeriesPage = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const upiUrl = `upi://pay?pa=${
-        process.env.UPI_VPA || "7600837122@hdfcbank"
-      }&pn=Tushti IAS&am=${amount}&cu=INR&tn=Payment for ${
-        series?.title || "Test Series"
-      } - ${user?.email || ""}`;
+      const pa = process.env.UPI_VPA || "7600837122@hdfcbank";
+      const pn = "Tushti IAS";
+      const tn = `Payment for ${series?.title || "Test Series"} - ${user?.email || ""}`;
+      const params = buildUpiParams({ pa, pn, am: amount, tn });
+      const os = detectOS();
 
-      if (isMobile()) {
-        // Mobile → open UPI app
+      if (os === "android") {
+        const upiUrl = `upi://pay?${params}`;
         window.location.href = upiUrl;
+      } else if (os === "ios") {
+        // iOS shows app-specific options below; no direct open here
       } else {
-        // Desktop → show QR code
+        const upiUrl = `upi://pay?${params}`;
         setQrCodeValue(upiUrl);
       }
 
@@ -198,23 +223,64 @@ export const TestSeriesPage = () => {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handlePurchase(series._id)}
-                    disabled={purchasing === series._id}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50"
-                  >
-                    {purchasing === series._id ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        <span>Processing...</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingCart className="w-4 h-4" />
-                        <span>Purchase Now</span>
-                      </>
-                    )}
-                  </button>
+                  {(() => {
+                    const os = detectOS();
+                    const pa = process.env.UPI_VPA || "7600837122@hdfcbank";
+                    const pn = "Tushti IAS";
+                    const tn = `Payment for ${series?.title || "Test Series"} - ${user?.email || ""}`;
+                    const params = buildUpiParams({ pa, pn, am: series?.price || 0, tn });
+
+                    if (os === "ios") {
+                      return (
+                        <div className="space-y-2">
+                          <div className="text-xs text-gray-500 mb-2">Please select an app you have installed.</div>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <button
+                              onClick={() => openUpi(`gpay://upi/pay?${params}`, series)}
+                              disabled={purchasing === series._id}
+                              className="w-full bg-gray-900 text-white py-2 px-3 rounded-lg font-semibold hover:bg-black transition flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                              <Apple size={16} /> Pay with GPay
+                            </button>
+                            <button
+                              onClick={() => openUpi(`phonepe://pay?${params}`, series)}
+                              disabled={purchasing === series._id}
+                              className="w-full bg-indigo-600 text-white py-2 px-3 rounded-lg font-semibold hover:bg-indigo-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                              <Smartphone size={16} /> Pay with PhonePe
+                            </button>
+                            <button
+                              onClick={() => openUpi(`paytmmp://pay?${params}`, series)}
+                              disabled={purchasing === series._id}
+                              className="w-full bg-blue-600 text-white py-2 px-3 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                              <Smartphone size={16} /> Pay with Paytm
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <button
+                        onClick={() => handlePurchase(series._id)}
+                        disabled={purchasing === series._id}
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50"
+                      >
+                        {purchasing === series._id ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Processing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingCart className="w-4 h-4" />
+                            <span>Purchase Now</span>
+                          </>
+                        )}
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
             ))}

@@ -12,6 +12,8 @@ import {
   Download,
   Share2,
   X,
+  Smartphone,
+  Apple,
 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import axios from "axios";
@@ -157,7 +159,68 @@ const CourseDetail = () => {
     setShowEnrollmentModal(true);
   };
 
-  const isMobile = () => /Mobi|Android/i.test(navigator.userAgent);
+  const detectOS = () => {
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    if (/android/i.test(ua)) return "android";
+    if (/iPad|iPhone|iPod/.test(ua)) return "ios";
+    return "other";
+  };
+
+  const buildUpiParams = ({ pa, pn, am, tn }) => {
+    const cu = "INR";
+    const params = new URLSearchParams({ pa, pn, am: String(am), cu, tn });
+    return params.toString();
+  };
+
+  const openSpecificUpi = async (scheme) => {
+    if (!buyerName || !buyerEmail || !buyerPhone) {
+      alert("Please enter name, email and 10-digit phone number");
+      return;
+    }
+    if (!/^\d{10}$/.test(buyerPhone)) {
+      alert("Phone number must be 10 digits");
+      return;
+    }
+    try {
+      const res = await axios.post(
+        `${API_BASE_URL}/upi-payments/initiate-public`,
+        {
+          courseId,
+          email: buyerEmail,
+          phone: buyerPhone,
+          name: buyerName,
+        }
+      );
+      if (res.data.success) {
+        const pa = process.env.UPI_VPA || "7600837122@hdfcbank";
+        const pn = "Tushti IAS";
+        const amountWithGst = String(
+          Number(course.price) + 0.18 * Number(course.price)
+        );
+        const tn = `Payment for ${course.title} - ${buyerEmail}`;
+        const params = buildUpiParams({ pa, pn, am: amountWithGst, tn });
+        setUpiUrl(`upi://pay?${params}`);
+        setPaymentStatus("pending");
+        setShowPayLoader(true);
+        setTimeout(() => {
+          setShowPayLoader(false);
+          window.location.href = `${scheme}${
+            scheme.includes("gpay") ? "upi/pay?" : "pay?"
+          }${params}`;
+        }, 800);
+        setReceipt({
+          name: buyerName,
+          email: buyerEmail,
+          phone: buyerPhone,
+          course: course.title,
+          amount: course.price,
+          status: "pending",
+        });
+      }
+    } catch (e) {
+      alert("Failed to initiate UPI payment");
+    }
+  };
 
   const handleInitiateUpi = async () => {
     if (!buyerName || !buyerEmail || !buyerPhone) {
@@ -179,7 +242,16 @@ const CourseDetail = () => {
         }
       );
       if (res.data.success) {
-        setUpiUrl(res.data.upiUrl);
+        const pa = process.env.UPI_VPA || "7600837122@hdfcbank";
+        const pn = "Tushti IAS";
+        const amountWithGst = String(
+          Number(course.price) + 0.18 * Number(course.price)
+        );
+        const tn = `Payment for ${course.title} - ${buyerEmail}`;
+        const params = buildUpiParams({ pa, pn, am: amountWithGst, tn });
+        const os = detectOS();
+        const upiGeneric = `upi://pay?${params}`;
+        setUpiUrl(upiGeneric);
         setToastMsg(
           "After paying, your login credentials will be emailed to you. Please check your email."
         );
@@ -188,12 +260,13 @@ const CourseDetail = () => {
         setShowPayLoader(true);
         setTimeout(() => {
           setShowPayLoader(false);
-          if (isMobile()) {
-            window.location.href = res.data.upiUrl;
-          } else {
+          if (os === "android") {
+            window.location.href = upiGeneric;
+          } else if (os === "other") {
             setShowQrCode(true);
           }
-        }, 2000);
+          // ios: buttons are shown; do not auto-open
+        }, 1200);
         setReceipt({
           name: buyerName,
           email: buyerEmail,
@@ -612,13 +685,50 @@ const CourseDetail = () => {
               </div>
               {!receipt ? (
                 <div className="space-y-4">
-                  <button
-                    onClick={handleInitiateUpi}
-                    disabled={showPayLoader}
-                    className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {showPayLoader ? "Processing…" : "Pay Now"}
-                  </button>
+                  {(() => {
+                    const os = detectOS();
+                    if (os === "ios") {
+                      return (
+                        <div className="space-y-2">
+                          <div className="text-xs text-gray-600">
+                            Please select an app you have installed.
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <button
+                              onClick={() => openSpecificUpi("gpay://")}
+                              disabled={showPayLoader}
+                              className="w-full px-3 py-2 bg-gray-900 text-white rounded-lg font-semibold hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                              <Apple size={16} /> Pay with GPay
+                            </button>
+                            <button
+                              onClick={() => openSpecificUpi("phonepe://")}
+                              disabled={showPayLoader}
+                              className="w-full px-3 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                              <Smartphone size={16} /> Pay with PhonePe
+                            </button>
+                            <button
+                              onClick={() => openSpecificUpi("paytmmp://")}
+                              disabled={showPayLoader}
+                              className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                              <Smartphone size={16} /> Pay with Paytm
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <button
+                        onClick={handleInitiateUpi}
+                        disabled={showPayLoader}
+                        className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {showPayLoader ? "Processing…" : "Pay Now"}
+                      </button>
+                    );
+                  })()}
                   <p className="text-xs text-gray-600">
                     After paying, your login credentials will be emailed to you.
                     Please check your email.
