@@ -748,12 +748,9 @@ const CourseDetail = () => {
               ) : (
                 <div className="space-y-4">
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-yellow-900 mb-1">
-                      Payment Submitted
-                    </h3>
                     <p className="text-sm text-yellow-800">
-                      Your payment is under verification. Within 24 hours,
-                      you’ll get access to your course.
+                      Your payment is under verification. If you have paid then
+                      , within 24 hours, you’ll get access to your course.
                     </p>
                   </div>
                   <div className="text-sm bg-gray-50 rounded-lg p-4">
