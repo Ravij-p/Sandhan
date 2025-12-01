@@ -193,7 +193,7 @@ const CourseDetail = () => {
           } else {
             setShowQrCode(true);
           }
-        }, 1500);
+        }, 2000);
         setReceipt({
           name: buyerName,
           email: buyerEmail,
@@ -238,14 +238,11 @@ const CourseDetail = () => {
   return (
     <div className="min-h-screen bg-gray-50 pt-40 sm:pt-36 md:pt-32 lg:pt-28">
       {showPayLoader && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full text-center">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-yellow-400 mx-auto mb-4"></div>
             <p className="text-gray-900 font-semibold">
-              Opening Payment App... Do NOT press back.
-            </p>
-            <p className="text-gray-700 mt-2">
-              Please wait while we redirect you.
+              Redirecting to payment app… Please do not press back.
             </p>
           </div>
         </div>
@@ -617,9 +614,10 @@ const CourseDetail = () => {
                 <div className="space-y-4">
                   <button
                     onClick={handleInitiateUpi}
-                    className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
+                    disabled={showPayLoader}
+                    className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Pay Now
+                    {showPayLoader ? "Processing…" : "Pay Now"}
                   </button>
                   <p className="text-xs text-gray-600">
                     After paying, your login credentials will be emailed to you.
