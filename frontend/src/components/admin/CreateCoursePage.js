@@ -71,11 +71,7 @@ const CreateCoursePage = () => {
   const categories = [
     { value: "gpsc", label: "GPSC - Gujarat Public Service Commission" },
     { value: "upsc", label: "UPSC - Union Public Service Commission" },
-    { value: "ssc", label: "SSC - Staff Selection Commission" },
-    { value: "neet11", label: "NEET 11 - Class 11 Preparation" },
-    { value: "neet12", label: "NEET 12 - Class 12 Preparation" },
-    { value: "talati", label: "TALATI - Talati cum Mantri" },
-    { value: "ethics", label: "ETHICS - Ethics and Values" },
+    { value: "Class 3", label: "Class 3" },
   ];
 
   return (

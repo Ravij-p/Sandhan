@@ -19,7 +19,7 @@ const courseSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
-      enum: ["gpsc", "upsc", "ssc", "neet11", "neet12", "talati", "ethics"],
+      enum: ["gpsc", "upsc", "Class 3", "neet11", "neet12", "talati", "ethics"],
     },
     duration: {
       type: String,

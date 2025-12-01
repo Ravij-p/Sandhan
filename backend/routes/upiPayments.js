@@ -32,9 +32,9 @@ router.post("/initiate", verifyToken, requireStudent, async (req, res) => {
 
     const upiUrl = `upi://pay?pa=${
       process.env.UPI_VPA || "7600837122@hdfcbank"
-    }&pn=Tushti IAS&am=${course.price}&cu=INR&tn=Payment for ${
-      course.title
-    } - ${req.user.email || "student"}`;
+    }&pn=Tushti IAS&am=${String(
+      Number(course.price) + 0.18 * Number(course.price)
+    )}&cu=INR&tn=Payment for ${course.title} - ${req.user.email || "student"}`;
     const pa = process.env.UPI_VPA;
     const pn = "Tushti IAS";
 

@@ -157,9 +157,11 @@ const CourseDetail = () => {
     const amount = String(course?.price || 0);
     const upi = `upi://pay?pa=${
       process.env.UPI_VPA || "7600837122@hdfcbank"
-    }&pn=Tushti IAS&am=${amount}&cu=INR&tn=Payment for ${
-      course?.title || "Course"
-    } - ${user?.email || "student@tushtiias.com"}`;
+    }&pn=Tushti IAS&am=${String(
+      Number(amount) + 0.18 * Number(amount)
+    )}&cu=INR&tn=Payment for ${course?.title || "Course"} - ${
+      user?.email || "student@tushtiias.com"
+    }`;
     setUpiUrl(upi);
     setShowQrCode(true);
   };
