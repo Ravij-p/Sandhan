@@ -43,15 +43,25 @@ const CourseContent = () => {
 
       // Fetch watched progress (if student)
       if (isStudent) {
-        const profileRes = await axios.get(`${API_BASE_URL}/auth/profile`, { headers });
+        const profileRes = await axios.get(`${API_BASE_URL}/auth/profile`, {
+          headers,
+        });
         const progressMap = profileRes.data?.user?.watchedProgress || {};
-        const obj = Object.fromEntries(Array.from(progressMap instanceof Map ? progressMap.entries() : Object.entries(progressMap)));
+        const obj = Object.fromEntries(
+          Array.from(
+            progressMap instanceof Map
+              ? progressMap.entries()
+              : Object.entries(progressMap)
+          )
+        );
         setWatchedProgress(obj);
       }
     } catch (error) {
       console.error("Error fetching course content:", error);
       if (error.response?.status === 403) {
-        setError("You need to be enrolled in this course to access the videos.");
+        setError(
+          "You need to be enrolled in this course to access the videos."
+        );
       } else {
         setError("Failed to load course content");
       }
@@ -215,14 +225,22 @@ const CourseContent = () => {
                             {formatDuration(video.duration)}
                           </div>
                         )}
-                        {watchedProgress[video._id] !== undefined && video.duration > 0 && (
-                          <div className="mt-2 w-full bg-gray-200 rounded h-1">
-                            <div
-                              className="bg-red-500 h-1 rounded"
-                              style={{ width: `${Math.min(100, (watchedProgress[video._id] / video.duration) * 100)}%` }}
-                            />
-                          </div>
-                        )}
+                        {watchedProgress[video._id] !== undefined &&
+                          video.duration > 0 && (
+                            <div className="mt-2 w-full bg-gray-200 rounded h-1">
+                              <div
+                                className="bg-red-500 h-1 rounded"
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    (watchedProgress[video._id] /
+                                      video.duration) *
+                                      100
+                                  )}%`,
+                                }}
+                              />
+                            </div>
+                          )}
                       </div>
                     </div>
                   </div>
