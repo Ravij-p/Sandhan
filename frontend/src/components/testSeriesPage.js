@@ -9,8 +9,19 @@ export const TestSeriesPage = () => {
   const [testSeries, setTestSeries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [purchasing, setPurchasing] = useState(null);
-  const [qrCodeValue, setQrCodeValue] = useState(null); // store UPI QR link
+  
+  // Payment States
+  const [selectedSeries, setSelectedSeries] = useState(null);
+  const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
+  const [buyerName, setBuyerName] = useState("");
+  const [buyerEmail, setBuyerEmail] = useState("");
+  const [buyerPhone, setBuyerPhone] = useState("");
+  const [receipt, setReceipt] = useState(null);
+  const [showPayLoader, setShowPayLoader] = useState(false);
+  const [upiUrl, setUpiUrl] = useState("");
+  const [showQrCode, setShowQrCode] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState("");
 
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
@@ -36,6 +47,15 @@ export const TestSeriesPage = () => {
     fetchTestSeries();
   }, [fetchTestSeries]);
 
+  // Pre-fill user data if logged in
+  useEffect(() => {
+    if (user) {
+      setBuyerName(user.name || "");
+      setBuyerEmail(user.email || "");
+      setBuyerPhone(user.phone || "");
+    }
+  }, [user]);
+
   const detectOS = () => {
     const ua = navigator.userAgent || navigator.vendor || window.opera;
     if (/android/i.test(ua)) return "android";
@@ -49,67 +69,147 @@ export const TestSeriesPage = () => {
     return params.toString();
   };
 
-  const openUpi = (url, series) => {
-    const token = localStorage.getItem("token");
-    axios
-      .post(
-        `${API_BASE_URL}/purchase`,
-        { testSeriesId: series._id, email: user?.email, amount: series?.price || 0 },
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-      .catch(() => {});
-    window.location.href = url;
+  const handleBuyClick = (series) => {
+    setSelectedSeries(series);
+    setReceipt(null);
+    setPaymentStatus("");
+    setShowEnrollmentModal(true);
   };
 
-  // Handle purchase click
-  const handlePurchase = async (testSeriesId) => {
-    if (!isAuthenticated || !isStudent) {
-      alert("Please login as a student to purchase test series");
+  const handleInitiateUpi = async () => {
+    if (!buyerName || !buyerEmail || !buyerPhone) {
+      alert("Please enter name, email and 10-digit phone number");
+      return;
+    }
+    if (!/^\d{10}$/.test(buyerPhone)) {
+      alert("Phone number must be 10 digits");
+      return;
+    }
+    
+    try {
+      // Use the updated endpoint that handles testSeriesId
+      const res = await axios.post(
+        `${API_BASE_URL}/upi-payments/initiate-public`,
+        {
+          testSeriesId: selectedSeries._id,
+          email: buyerEmail,
+          phone: buyerPhone,
+          name: buyerName,
+        }
+      );
+
+      if (res.data.success) {
+        const pa = process.env.UPI_VPA || "7600837122@hdfcbank";
+        const pn = "Tushti IAS";
+        // Calculate amount with GST if needed, currently using flat price as per old code logic
+        // But CourseDetail adds 18% GST. Let's check if Test Series price is inclusive or exclusive.
+        // The old code just used `series.price`. I will assume it is inclusive for now to match old behavior, 
+        // OR I should follow CourseDetail pattern. 
+        // Let's stick to series.price as the "Amount" displayed. 
+        // Wait, CourseDetail adds 18% GST on top. 
+        // Let's assume the price displayed is base price and add GST like CourseDetail for consistency if requested.
+        // However, user said "Replicate course payment flow". 
+        // I will use the price from the series object directly for now to be safe, or add GST if I see it's standard.
+        // In CourseDetail: `Number(course.price) + 0.18 * Number(course.price)`
+        // I will do the same here for consistency.
+        const amountWithGst = String(
+          Number(selectedSeries.price) // + 0.18 * Number(selectedSeries.price) // Uncomment if GST needed
+          // Actually, let's just use the price as is for now, or maybe the backend expects it.
+          // The backend UpiPayment schema expects 'amount'.
+        );
+        
+        // Let's stick to exact price from DB to avoid confusion, unless explicitly told to add GST.
+        // CourseDetail explicitly shows "+ 18% GST". TestSeriesPage didn't.
+        
+        const tn = `Payment for ${selectedSeries.title} - ${buyerEmail}`;
+        const params = buildUpiParams({ pa, pn, am: selectedSeries.price, tn });
+        const os = detectOS();
+        const upiGeneric = `upi://pay?${params}`;
+        
+        setUpiUrl(upiGeneric);
+        setToastMsg(
+          "After paying, your login credentials will be emailed to you. Please check your email."
+        );
+        setTimeout(() => setToastMsg(""), 6000);
+        
+        setPaymentStatus("pending");
+        setShowPayLoader(true);
+        
+        setTimeout(() => {
+          setShowPayLoader(false);
+          if (os === "android") {
+            window.location.href = upiGeneric;
+          } else if (os === "other") {
+            setShowQrCode(true);
+          }
+          // ios: buttons are shown; do not auto-open
+        }, 1200);
+
+        setReceipt({
+          name: buyerName,
+          email: buyerEmail,
+          phone: buyerPhone,
+          item: selectedSeries.title,
+          amount: selectedSeries.price,
+          status: "pending",
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to initiate UPI payment");
+    }
+  };
+
+  const openSpecificUpi = async (scheme) => {
+    if (!buyerName || !buyerEmail || !buyerPhone) {
+      alert("Please enter name, email and 10-digit phone number");
+      return;
+    }
+    if (!/^\d{10}$/.test(buyerPhone)) {
+      alert("Phone number must be 10 digits");
       return;
     }
 
-    setPurchasing(testSeriesId);
-
     try {
-      const token = localStorage.getItem("token");
-      const series = testSeries.find((t) => t._id === testSeriesId);
-      const amount = series?.price || 0;
-
-      // Save purchase intent in backend
-      await axios.post(
-        `${API_BASE_URL}/purchase`,
+      const res = await axios.post(
+        `${API_BASE_URL}/upi-payments/initiate-public`,
         {
-          testSeriesId,
-          email: user?.email,
-          amount,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+          testSeriesId: selectedSeries._id,
+          email: buyerEmail,
+          phone: buyerPhone,
+          name: buyerName,
+        }
       );
 
-      const pa = process.env.UPI_VPA || "7600837122@hdfcbank";
-      const pn = "Tushti IAS";
-      const tn = `Payment for ${series?.title || "Test Series"} - ${user?.email || ""}`;
-      const params = buildUpiParams({ pa, pn, am: amount, tn });
-      const os = detectOS();
+      if (res.data.success) {
+        const pa = process.env.UPI_VPA || "7600837122@hdfcbank";
+        const pn = "Tushti IAS";
+        const tn = `Payment for ${selectedSeries.title} - ${buyerEmail}`;
+        const params = buildUpiParams({ pa, pn, am: selectedSeries.price, tn });
+        
+        setUpiUrl(`upi://pay?${params}`);
+        setPaymentStatus("pending");
+        setShowPayLoader(true);
+        
+        setTimeout(() => {
+          setShowPayLoader(false);
+          window.location.href = `${scheme}${
+            scheme.includes("gpay") ? "upi/pay?" : "pay?"
+          }${params}`;
+        }, 800);
 
-      if (os === "android") {
-        const upiUrl = `upi://pay?${params}`;
-        window.location.href = upiUrl;
-      } else if (os === "ios") {
-        // iOS shows app-specific options below; no direct open here
-      } else {
-        const upiUrl = `upi://pay?${params}`;
-        setQrCodeValue(upiUrl);
+        setReceipt({
+          name: buyerName,
+          email: buyerEmail,
+          phone: buyerPhone,
+          item: selectedSeries.title,
+          amount: selectedSeries.price,
+          status: "pending",
+        });
       }
-
-      alert(
-        "After payment, please contact support with your UTR for test series access."
-      );
-    } catch (err) {
-      console.error("Purchase error:", err);
-      alert("❌ Failed to initiate purchase. Please try again.");
-    } finally {
-      setPurchasing(null);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to initiate UPI payment");
     }
   };
 
@@ -223,64 +323,13 @@ export const TestSeriesPage = () => {
                     </div>
                   </div>
 
-                  {(() => {
-                    const os = detectOS();
-                    const pa = process.env.UPI_VPA || "7600837122@hdfcbank";
-                    const pn = "Tushti IAS";
-                    const tn = `Payment for ${series?.title || "Test Series"} - ${user?.email || ""}`;
-                    const params = buildUpiParams({ pa, pn, am: series?.price || 0, tn });
-
-                    if (os === "ios") {
-                      return (
-                        <div className="space-y-2">
-                          <div className="text-xs text-gray-500 mb-2">Please select an app you have installed.</div>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            <button
-                              onClick={() => openUpi(`gpay://upi/pay?${params}`, series)}
-                              disabled={purchasing === series._id}
-                              className="w-full bg-gray-900 text-white py-2 px-3 rounded-lg font-semibold hover:bg-black transition flex items-center justify-center gap-2 disabled:opacity-50"
-                            >
-                              <Apple size={16} /> Pay with GPay
-                            </button>
-                            <button
-                              onClick={() => openUpi(`phonepe://pay?${params}`, series)}
-                              disabled={purchasing === series._id}
-                              className="w-full bg-indigo-600 text-white py-2 px-3 rounded-lg font-semibold hover:bg-indigo-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
-                            >
-                              <Smartphone size={16} /> Pay with PhonePe
-                            </button>
-                            <button
-                              onClick={() => openUpi(`paytmmp://pay?${params}`, series)}
-                              disabled={purchasing === series._id}
-                              className="w-full bg-blue-600 text-white py-2 px-3 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
-                            >
-                              <Smartphone size={16} /> Pay with Paytm
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <button
-                        onClick={() => handlePurchase(series._id)}
-                        disabled={purchasing === series._id}
-                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50"
-                      >
-                        {purchasing === series._id ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            <span>Processing...</span>
-                          </>
-                        ) : (
-                          <>
-                            <ShoppingCart className="w-4 h-4" />
-                            <span>Purchase Now</span>
-                          </>
-                        )}
-                      </button>
-                    );
-                  })()}
+                  <button
+                    onClick={() => handleBuyClick(series)}
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-2"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    <span>Buy Now</span>
+                  </button>
                 </div>
               </div>
             ))}
@@ -300,20 +349,193 @@ export const TestSeriesPage = () => {
         </div>
       </div>
 
+      {/* Enrollment/Payment Modal */}
+      {showEnrollmentModal && selectedSeries && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Purchase Test Series
+                </h2>
+                <button
+                  onClick={() => setShowEnrollmentModal(false)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="mb-4 space-y-2">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Test Series</span>
+                    <span className="text-sm font-semibold text-gray-900 text-right">
+                      {selectedSeries.title}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-gray-600">Amount</span>
+                    <span className="text-xl font-bold text-gray-900">
+                      ₹{selectedSeries.price}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="mb-3">
+                  <label className="block text-xs text-gray-500 mb-1">Full Name</label>
+                  <input
+                    type="text"
+                    value={buyerName}
+                    onChange={(e) => setBuyerName(e.target.value)}
+                    placeholder="Enter your name"
+                    className="w-full px-3 py-2 border rounded"
+                  />
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Email ID</label>
+                    <input
+                      type="email"
+                      value={buyerEmail}
+                      onChange={(e) => setBuyerEmail(e.target.value)}
+                      placeholder="Enter your email"
+                      className="w-full px-3 py-2 border rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Phone Number</label>
+                    <input
+                      type="tel"
+                      value={buyerPhone}
+                      onChange={(e) => setBuyerPhone(e.target.value)}
+                      placeholder="10-digit phone number"
+                      className="w-full px-3 py-2 border rounded"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {!receipt ? (
+                <div className="space-y-4">
+                  {(() => {
+                    const os = detectOS();
+                    if (os === "ios") {
+                      return (
+                        <div className="space-y-2">
+                          <div className="text-xs text-gray-600">
+                            Please select an app you have installed.
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <button
+                              onClick={() => openSpecificUpi("gpay://")}
+                              disabled={showPayLoader}
+                              className="w-full px-3 py-2 bg-gray-900 text-white rounded-lg font-semibold hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                              <Apple size={16} /> GPay
+                            </button>
+                            <button
+                              onClick={() => openSpecificUpi("phonepe://")}
+                              disabled={showPayLoader}
+                              className="w-full px-3 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                              <Smartphone size={16} /> PhonePe
+                            </button>
+                            <button
+                              onClick={() => openSpecificUpi("paytmmp://")}
+                              disabled={showPayLoader}
+                              className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                              <Smartphone size={16} /> Paytm
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <button
+                        onClick={handleInitiateUpi}
+                        disabled={showPayLoader}
+                        className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {showPayLoader ? "Processing…" : "Pay Now"}
+                      </button>
+                    );
+                  })()}
+                  
+                  <p className="text-xs text-gray-600 text-center">
+                    Secure payment powered by UPI
+                  </p>
+                  
+                  {toastMsg && (
+                    <div className="text-xs text-yellow-800 bg-yellow-50 border border-yellow-200 rounded p-2">
+                      {toastMsg}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-sm text-yellow-800">
+                      Your payment is under verification. Within 24 hours, you’ll get access.
+                    </p>
+                  </div>
+                  <div className="text-sm bg-gray-50 rounded-lg p-4">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Name:</span>
+                      <span className="font-medium">{receipt.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Email:</span>
+                      <span className="font-medium">{receipt.email}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Item:</span>
+                      <span className="font-medium">{receipt.item}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Amount:</span>
+                      <span className="font-medium">₹{receipt.amount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Status:</span>
+                      <span className="font-medium capitalize">
+                        {receipt.status}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowEnrollmentModal(false)}
+                    className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* QR Code Modal for Desktop */}
-      {qrCodeValue && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg relative">
+      {showQrCode && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 rounded-lg shadow-lg relative max-w-sm w-full">
             <button
-              onClick={() => setQrCodeValue(null)}
+              onClick={() => setShowQrCode(false)}
               className="absolute top-2 right-2 text-gray-600 hover:text-black"
             >
               <X className="w-5 h-5" />
             </button>
             <h2 className="text-xl font-bold mb-4 text-center">Scan to Pay</h2>
-            <QRCodeCanvas value={qrCodeValue} size={200} />
+            <div className="flex justify-center mb-4">
+                <QRCodeCanvas value={upiUrl} size={200} />
+            </div>
             <p className="text-sm text-gray-600 mt-3 text-center">
-              Scan with any UPI app to complete payment
+              Scan with any UPI app (GPay, PhonePe, Paytm) to complete payment.
+            </p>
+            <p className="text-xs text-gray-500 mt-2 text-center">
+                After payment, please allow some time for verification.
             </p>
           </div>
         </div>

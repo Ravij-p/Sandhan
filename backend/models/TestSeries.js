@@ -19,7 +19,16 @@ const testSeriesSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
-      enum: ["gpsc", "upsc", "neet", "banking", "railway", "ssc", "talati"],
+      enum: [
+        "gpsc",
+        "upsc",
+        "neet",
+        "Class1-2",
+        "banking",
+        "railway",
+        "ssc",
+        "talati",
+      ],
     },
     duration: {
       type: String,

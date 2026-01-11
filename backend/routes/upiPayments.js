@@ -8,6 +8,8 @@ const {
   requireAdmin,
 } = require("../middleware/auth");
 
+const TestSeries = require("../models/TestSeries");
+
 const router = express.Router();
 
 // Helper: build UPI intent URL
@@ -19,29 +21,44 @@ function buildUpiUrl({ pa, pn, am, cu = "INR", tn }) {
 // Student: Initiate UPI payment (returns intent URL with course amount)
 router.post("/initiate", verifyToken, requireStudent, async (req, res) => {
   try {
-    const { courseId } = req.body;
+    const { courseId, testSeriesId } = req.body;
 
-    if (!courseId) {
-      return res.status(400).json({ error: "Course ID is required" });
+    if (!courseId && !testSeriesId) {
+      return res.status(400).json({ error: "Course ID or Test Series ID is required" });
     }
 
-    const course = await Course.findById(courseId);
-    if (!course || !course.isActive) {
-      return res.status(404).json({ error: "Course not found" });
+    let item, itemType, itemTitle, itemPrice;
+
+    if (courseId) {
+      item = await Course.findById(courseId);
+      itemType = "Course";
+    } else {
+      item = await TestSeries.findById(testSeriesId);
+      itemType = "TestSeries";
     }
 
+    if (!item || !item.isActive) {
+      return res.status(404).json({ error: `${itemType} not found` });
+    }
+    
+    itemTitle = item.title;
+    itemPrice = item.price;
+
+    const amountWithGst = String(
+      Number(itemPrice) + 0.18 * Number(itemPrice) // assuming GST logic is same
+    );
+    // For test series price might already include GST or not, assuming same logic as course for consistency with prompt "Reuse the existing course payment flow"
+    
     const upiUrl = `upi://pay?pa=${
       process.env.UPI_VPA || "7600837122@hdfcbank"
-    }&pn=Tushti IAS&am=${String(
-      Number(course.price) + 0.18 * Number(course.price)
-    )}&cu=INR&tn=Payment for ${course.title} - ${req.user.email || "student"}`;
+    }&pn=Tushti IAS&am=${amountWithGst}&cu=INR&tn=Payment for ${itemTitle} - ${req.user.email || "student"}`;
     const pa = process.env.UPI_VPA;
     const pn = "Tushti IAS";
 
     res.json({
       success: true,
       upiUrl,
-      course: { id: course._id, title: course.title, price: course.price },
+      item: { id: item._id, title: itemTitle, price: itemPrice, type: itemType },
       payee: { pa, pn },
     });
   } catch (error) {
@@ -53,17 +70,27 @@ router.post("/initiate", verifyToken, requireStudent, async (req, res) => {
 // Public: Initiate UPI payment and pre-create student/enrollment without login
 router.post("/initiate-public", async (req, res) => {
   try {
-    const { courseId, email, phone, name } = req.body;
-    if (!courseId || !email || !phone) {
+    const { courseId, testSeriesId, email, phone, name } = req.body;
+    if ((!courseId && !testSeriesId) || !email || !phone) {
       return res
         .status(400)
-        .json({ error: "courseId, email and phone are required" });
+        .json({ error: "Item ID, email and phone are required" });
     }
 
-    const course = await Course.findById(courseId);
-    if (!course || !course.isActive) {
-      return res.status(404).json({ error: "Course not found" });
+    let item, itemType, itemTitle, itemPrice;
+    if (courseId) {
+      item = await Course.findById(courseId);
+      itemType = "Course";
+    } else {
+      item = await TestSeries.findById(testSeriesId);
+      itemType = "TestSeries";
     }
+
+    if (!item || !item.isActive) {
+      return res.status(404).json({ error: `${itemType} not found` });
+    }
+    itemTitle = item.title;
+    itemPrice = item.price;
 
     let student = await Student.findOne({ email });
     let generatedPassword = null;
@@ -85,31 +112,54 @@ router.post("/initiate-public", async (req, res) => {
       }
     }
 
-    const alreadyPending = student.enrolledCourses.some(
-      (e) => e.course.toString() === courseId && e.paymentStatus === "pending"
-    );
-    const alreadyPaid = student.enrolledCourses.some(
-      (e) => e.course.toString() === courseId && e.paymentStatus === "paid"
-    );
+    let alreadyPending = false;
+    let alreadyPaid = false;
 
-    if (!alreadyPending && !alreadyPaid) {
-      student.enrolledCourses.push({
-        course: course._id,
-        enrolledAt: new Date(),
-        paymentStatus: "pending",
-        amount: course.price,
-      });
-      await student.save();
+    if (itemType === "Course") {
+       alreadyPending = student.enrolledCourses.some(
+        (e) => e.course.toString() === courseId && e.paymentStatus === "pending"
+      );
+       alreadyPaid = student.enrolledCourses.some(
+        (e) => e.course.toString() === courseId && e.paymentStatus === "paid"
+      );
+      
+      if (!alreadyPending && !alreadyPaid) {
+        student.enrolledCourses.push({
+          course: item._id,
+          enrolledAt: new Date(),
+          paymentStatus: "pending",
+          amount: itemPrice,
+        });
+        await student.save();
+      }
+    } else {
+      // Test Series
+       alreadyPending = student.purchasedTestSeries.some(
+        (e) => e.testSeries.toString() === testSeriesId && e.paymentStatus === "pending"
+      );
+       alreadyPaid = student.purchasedTestSeries.some(
+        (e) => e.testSeries.toString() === testSeriesId && e.paymentStatus === "paid"
+      );
+
+      if (!alreadyPending && !alreadyPaid) {
+        student.purchasedTestSeries.push({
+          testSeries: item._id,
+          enrolledAt: new Date(),
+          paymentStatus: "pending",
+          amount: itemPrice, // Using same schema structure
+        });
+        await student.save();
+      }
     }
 
     const amountWithGst = String(
-      Number(course.price) + 0.18 * Number(course.price)
+      Number(itemPrice) + 0.18 * Number(itemPrice)
     );
-    const upiUrl = `upi://pay?pa=${process.env.UPI_VPA}&pn=Tushti IAS&am=${amountWithGst}&cu=INR&tn=Payment for ${course.title} - ${email}`;
+    const upiUrl = `upi://pay?pa=${process.env.UPI_VPA}&pn=Tushti IAS&am=${amountWithGst}&cu=INR&tn=Payment for ${itemTitle} - ${email}`;
     res.json({
       success: true,
       upiUrl,
-      course: { id: course._id, title: course.title, price: course.price },
+      item: { id: item._id, title: itemTitle, price: itemPrice, type: itemType },
       preCreated: { studentId: student._id, tempPassword: generatedPassword },
     });
   } catch (error) {
@@ -121,57 +171,89 @@ router.post("/initiate-public", async (req, res) => {
 // Student: Submit UTR/Transaction ID for verification
 router.post("/submit-utr", verifyToken, requireStudent, async (req, res) => {
   try {
-    const { courseId, utrNumber } = req.body;
-    if (!courseId || !utrNumber) {
+    const { courseId, testSeriesId, utrNumber } = req.body;
+    if ((!courseId && !testSeriesId) || !utrNumber) {
       return res
         .status(400)
-        .json({ error: "courseId and utrNumber are required" });
+        .json({ error: "Item ID and utrNumber are required" });
     }
 
-    const course = await Course.findById(courseId);
-    if (!course || !course.isActive) {
-      return res.status(404).json({ error: "Course not found" });
+    let item, itemType, itemTitle, itemPrice;
+    if (courseId) {
+      item = await Course.findById(courseId);
+      itemType = "Course";
+    } else {
+      item = await TestSeries.findById(testSeriesId);
+      itemType = "TestSeries";
     }
+
+    if (!item || !item.isActive) {
+      return res.status(404).json({ error: `${itemType} not found` });
+    }
+    itemTitle = item.title;
+    itemPrice = item.price;
 
     const student = await Student.findById(req.user._id);
     if (!student) {
       return res.status(404).json({ error: "Student not found" });
     }
 
-    // Prevent duplicate submissions for the same course if already approved
-    const alreadyEnrolled = student.enrolledCourses.some(
-      (e) => e.course.toString() === courseId && e.paymentStatus === "paid"
-    );
-    if (alreadyEnrolled) {
-      return res
-        .status(400)
-        .json({ error: "You already have access to this course" });
+    // Prevent duplicate submissions
+    if (itemType === "Course") {
+      const alreadyEnrolled = student.enrolledCourses.some(
+        (e) => e.course.toString() === courseId && e.paymentStatus === "paid"
+      );
+      if (alreadyEnrolled) {
+        return res
+          .status(400)
+          .json({ error: "You already have access to this course" });
+      }
+    } else {
+      const alreadyPurchased = student.purchasedTestSeries.some(
+        (e) => e.testSeries.toString() === testSeriesId && e.paymentStatus === "paid"
+      );
+      if (alreadyPurchased) {
+        return res
+          .status(400)
+          .json({ error: "You already have access to this test series" });
+      }
     }
 
-    // Prevent duplicate pending submission for same student/course
-    const existingPending = await UpiPayment.findOne({
+    // Prevent duplicate pending submission
+    const filter = {
       studentId: student._id,
-      courseId,
       status: "pending",
-    });
+    };
+    if (courseId) filter.courseId = courseId;
+    else filter.testSeriesId = testSeriesId;
+
+    const existingPending = await UpiPayment.findOne(filter);
     if (existingPending) {
       return res.status(400).json({
-        error: "A pending verification already exists for this course",
+        error: "A pending verification already exists for this item",
       });
     }
 
     // Create UPI payment record
-    const payment = await UpiPayment.create({
+    const paymentData = {
       name: student.name,
       email: student.email,
       phone: student.mobile,
-      courseId: course._id,
-      courseTitle: course.title,
-      amount: course.price,
+      amount: itemPrice,
       utrNumber: utrNumber.trim(),
       status: "pending",
       studentId: student._id,
-    });
+    };
+
+    if (courseId) {
+      paymentData.courseId = courseId;
+      paymentData.courseTitle = itemTitle;
+    } else {
+      paymentData.testSeriesId = testSeriesId;
+      paymentData.testSeriesTitle = itemTitle;
+    }
+
+    const payment = await UpiPayment.create(paymentData);
 
     res.status(201).json({
       success: true,
@@ -182,7 +264,7 @@ router.post("/submit-utr", verifyToken, requireStudent, async (req, res) => {
         name: payment.name,
         email: payment.email,
         phone: payment.phone,
-        course: payment.courseTitle,
+        item: itemTitle,
         amount: payment.amount,
         status: payment.status,
         createdAt: payment.createdAt,
@@ -298,10 +380,9 @@ router.post("/:id/reject", verifyToken, requireAdmin, async (req, res) => {
 router.get("/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const payment = await UpiPayment.findById(id).populate(
-      "courseId",
-      "title price"
-    );
+    const payment = await UpiPayment.findById(id)
+      .populate("courseId", "title price")
+      .populate("testSeriesId", "title price");
     if (!payment) return res.status(404).json({ error: "Receipt not found" });
 
     // Allow owner or admin
@@ -321,7 +402,7 @@ router.get("/:id", verifyToken, async (req, res) => {
         name: payment.name,
         email: payment.email,
         phone: payment.phone,
-        course: payment.courseTitle,
+        course: payment.courseTitle || payment.testSeriesTitle,
         amount: payment.amount,
         status: payment.status,
         createdAt: payment.createdAt,

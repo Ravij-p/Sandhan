@@ -233,7 +233,7 @@ const AdminTestSeriesManagement = () => {
   const categories = [
     { value: "gpsc", label: "GPSC - Gujarat Public Service Commission" },
     { value: "upsc", label: "UPSC - Union Public Service Commission" },
-    { value: "neet", label: "NEET - National Eligibility cum Entrance Test" },
+    { value: "Class1-2", label: "Class 1 and 2" },
     { value: "banking", label: "Banking - Banking Exams" },
     { value: "railway", label: "Railway - Railway Exams" },
     { value: "ssc", label: "SSC - Staff Selection Commission" },

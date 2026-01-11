@@ -10,6 +10,7 @@ import {
 import CoursePage from "./components/coursePages";
 import Header from "./components/Header";
 import { sliderCards, courseCards } from "./slides/sliderCards";
+import CardSlider from "./CardSlider";
 import { Routes, Route, useNavigate, NavLink } from "react-router-dom";
 import { AboutPage } from "./components/aboutPage";
 import { TestSeriesPage } from "./components/testSeriesPage";
@@ -37,15 +38,15 @@ import AdminCoursePage from "./components/admin/AdminCoursePage";
 import CreateCoursePage from "./components/admin/CreateCoursePage";
 import AdminTestSeriesManagement from "./components/admin/AdminTestSeriesManagement";
 import AdminUpiApprovals from "./components/admin/AdminUpiApprovals";
+import HomeAdOverlay from "./components/HomeAdOverlay";
+
 const AppContent = () => {
   const [isCoursesDropdownOpen, setIsCoursesDropdownOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showAd, setShowAd] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
-  const [ads, setAds] = useState([]);
   const navigate = useNavigate();
   const { isAuthenticated, isStudent, isAdmin, logout } = useAuth();
   useEffect(() => {
@@ -53,15 +54,6 @@ const AppContent = () => {
       setCurrentSlide((prev) => (prev + 1) % 8);
     }, 3000);
     return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    // Optional: Uncomment below if you want ad only once per visit
-    const adShown = sessionStorage.getItem("adShown");
-    if (!adShown) {
-      setShowAd(true);
-      sessionStorage.setItem("adShown", "true");
-    }
   }, []);
 
   // Fetch courses for navbar
@@ -85,20 +77,6 @@ const AppContent = () => {
     };
 
     fetchCourses();
-    const fetchAds = async () => {
-      try {
-        const res = await fetch(
-          `${
-            process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api"
-          }/homepage-ads/public/active`
-        );
-        const data = await res.json();
-        if (data.success) setAds(data.ads);
-      } catch (e) {
-        // ignore
-      }
-    };
-    fetchAds();
   }, []);
   const Navigation = () => (
     <nav className="fixed top-8 left-0 right-0 z-50 bg-[#f9dc41] shadow-md px-4">
@@ -376,82 +354,82 @@ const AppContent = () => {
       )}
     </nav>
   );
-  const CardSlider = () => {
-    const n = sliderCards.length;
-    const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % n);
-    const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + n) % n);
+  // const CardSlider = () => {
+  //   const n = sliderCards.length;
+  //   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % n);
+  //   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + n) % n);
 
-    const getVisibleCards = () => {
-      const cards = [];
-      for (let i = 0; i < 1; i++) {
-        const index = (currentSlide + i) % n;
-        cards.push(sliderCards[index]);
-      }
-      return cards;
-    };
+  //   const getVisibleCards = () => {
+  //     const cards = [];
+  //     for (let i = 0; i < 1; i++) {
+  //       const index = (currentSlide + i) % n;
+  //       cards.push(sliderCards[index]);
+  //     }
+  //     return cards;
+  //   };
 
-    return (
-      <div className="relative bg-white py-6 lg:py-12 ">
-        <div className="container mx-auto px-4">
-          <h2
-            className="text-2xl lg:text-3xl font-bold text-center mb-0 lg:mb-6"
-            style={{ color: "#163233" }}
-          >
-            Featured Programs
-          </h2>
+  //   return (
+  //     <div className="relative bg-white py-6 lg:py-12 ">
+  //       <div className="container mx-auto px-4">
+  //         <h2
+  //           className="text-2xl lg:text-3xl font-bold text-center mb-0 lg:mb-6"
+  //           style={{ color: "#163233" }}
+  //         >
+  //           Featured Programs
+  //         </h2>
 
-          <div className="relative max-w-4xl mx-auto flex items-center justify-center   ">
-            <button
-              onClick={prevSlide}
-              className="absolute left-2 lg:-left-12 top-1/2 transform -translate-y-1/2 z-10 p-2 rounded-full shadow-lg hover:shadow-xl transition-shadow"
-              style={{ backgroundColor: "#f9dc41" }}
-            >
-              <ChevronLeft size={20} className="lg:w-6 lg:h-6" />
-            </button>
+  //         <div className="relative max-w-4xl mx-auto flex items-center justify-center   ">
+  //           <button
+  //             onClick={prevSlide}
+  //             className="absolute left-2 lg:-left-12 top-1/2 transform -translate-y-1/2 z-10 p-2 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+  //             style={{ backgroundColor: "#f9dc41" }}
+  //           >
+  //             <ChevronLeft size={20} className="lg:w-6 lg:h-6" />
+  //           </button>
 
-            <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mx-12 lg:mx-0">
-              {getVisibleCards().map((card) => (
-                <div
-                  key={card.id}
-                  className={`text-white p-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300`}
-                  onClick={() => {
-                    navigate(`${card.routing_link}`);
-                  }}
-                >
-                  <img
-                    src={card.img_link}
-                    alt="Course card"
-                    height={300}
-                    width={480}
-                  />
-                </div>
-              ))}
-            </div>
+  //           <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mx-12 lg:mx-0">
+  //             {getVisibleCards().map((card) => (
+  //               <div
+  //                 key={card.id}
+  //                 className={`text-white p-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300`}
+  //                 onClick={() => {
+  //                   navigate(`${card.routing_link}`);
+  //                 }}
+  //               >
+  //                 <img
+  //                   src={card.img_link}
+  //                   alt="Course card"
+  //                   height={300}
+  //                   width={480}
+  //                 />
+  //               </div>
+  //             ))}
+  //           </div>
 
-            <button
-              onClick={nextSlide}
-              className="absolute right-2 lg:-right-12 top-1/2 transform -translate-y-1/2 z-10 p-2 rounded-full shadow-lg hover:shadow-xl transition-shadow"
-              style={{ backgroundColor: "#f9dc41" }}
-            >
-              <ChevronRight size={20} className="lg:w-6 lg:h-6" />
-            </button>
-          </div>
+  //           <button
+  //             onClick={nextSlide}
+  //             className="absolute right-2 lg:-right-12 top-1/2 transform -translate-y-1/2 z-10 p-2 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+  //             style={{ backgroundColor: "#f9dc41" }}
+  //           >
+  //             <ChevronRight size={20} className="lg:w-6 lg:h-6" />
+  //           </button>
+  //         </div>
 
-          <div className="flex justify-center mt-6 space-x-2">
-            {Array.from({ length: 1 }, (_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentSlide(index)}
-                className={`w-3 h-3 rounded-full transition-colors ${
-                  currentSlide === index ? "bg-yellow-400" : "bg-gray-300"
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  //         <div className="flex justify-center mt-6 space-x-2">
+  //           {Array.from({ length: 1 }, (_, index) => (
+  //             <button
+  //               key={index}
+  //               onClick={() => setCurrentSlide(index)}
+  //               className={`w-3 h-3 rounded-full transition-colors ${
+  //                 currentSlide === index ? "bg-yellow-400" : "bg-gray-300"
+  //               }`}
+  //             />
+  //           ))}
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // };
   const CourseCards = () => {
     // Use real courses from database, fallback to static if loading or empty
     const displayCourses = courses.slice(0, 6);
@@ -587,38 +565,13 @@ const AppContent = () => {
         // </div>
       }
       <CardSlider />
-      {/* Homepage Ads from DB */}
-      {ads.length > 0 && (
-        <div className="py-8" style={{ backgroundColor: "#fafaee" }}>
-          <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {ads.map((ad) => (
-              <a
-                key={ad._id}
-                href={ad.redirectUrl}
-                className="bg-white rounded-xl shadow hover:shadow-lg transition p-4 block"
-              >
-                <img
-                  src={ad.imageUrl}
-                  alt={ad.title}
-                  className="w-full h-40 object-cover rounded"
-                />
-                <h3 className="mt-3 font-semibold text-gray-900">{ad.title}</h3>
-                {ad.description && (
-                  <p className="text-sm text-gray-600 line-clamp-2">
-                    {ad.description}
-                  </p>
-                )}
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
       <CourseCards />
     </div>
   );
 
   return (
     <div className="min-h-screen">
+      <HomeAdOverlay />
       <Header />
       <Navigation />
       <Routes>
