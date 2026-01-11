@@ -25,19 +25,12 @@ const HomeAdOverlay = () => {
 
     setAd(staticAd);
 
-    // Check session storage
-    const adClosed = sessionStorage.getItem(`ad_closed_${staticAd._id}`);
-    if (!adClosed) {
-      // Small delay for smooth entrance
-      setTimeout(() => setIsVisible(true), 500);
-    }
+    // Always show ad with a small delay for smooth entrance
+    setTimeout(() => setIsVisible(true), 500);
   }, [location.pathname]);
 
   const handleClose = () => {
     setIsVisible(false);
-    if (ad) {
-      sessionStorage.setItem(`ad_closed_${ad._id}`, "true");
-    }
   };
 
   const handleClick = () => {
