@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
   BookOpen,
   Play,
-  Clock,
   Users,
   ArrowLeft,
   Lock,
   CheckCircle,
   Download,
-  Share2,
   X,
   Smartphone,
   Apple,
@@ -21,7 +19,7 @@ import axios from "axios";
 const CourseDetail = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated, isStudent, isAdmin } = useAuth();
+  const { isAuthenticated, isStudent, isAdmin } = useAuth();
   const [course, setCourse] = useState(null);
   const [videos, setVideos] = useState([]);
   const [materials, setMaterials] = useState([]);
@@ -42,20 +40,7 @@ const CourseDetail = () => {
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
 
-  useEffect(() => {
-    fetchCourseDetails();
-    if (isAuthenticated) {
-      if (isAdmin) {
-        setIsEnrolled(true);
-        fetchVideos();
-        fetchMaterials();
-      } else if (isStudent) {
-        checkEnrollment();
-      }
-    }
-  }, [courseId, isAuthenticated, isStudent, isAdmin]);
-
-  const fetchCourseDetails = async () => {
+  const fetchCourseDetails = useCallback(async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/courses/${courseId}`);
       if (response.data.success && response.data.course) {
@@ -68,9 +53,45 @@ const CourseDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_BASE_URL, courseId]);
 
-  const checkEnrollment = async () => {
+  const fetchVideos = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `${API_BASE_URL}/courses/${courseId}/videos`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setVideos(response.data.videos);
+    } catch (error) {
+      // ignore
+    }
+  }, [API_BASE_URL, courseId]);
+
+  const fetchMaterials = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `${API_BASE_URL}/documents/courses/${courseId}/materials`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.data.success) {
+        setMaterials(response.data.materials || []);
+      }
+    } catch (error) {
+      // ignore
+    }
+  }, [API_BASE_URL, courseId]);
+
+  const checkEnrollment = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(`${API_BASE_URL}/payments/enrollments`, {
@@ -91,43 +112,28 @@ const CourseDetail = () => {
     } catch (error) {
       // ignore
     }
-  };
+  }, [API_BASE_URL, courseId, fetchVideos, fetchMaterials]);
 
-  const fetchVideos = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(
-        `${API_BASE_URL}/courses/${courseId}/videos`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setVideos(response.data.videos);
-    } catch (error) {
-      // ignore
-    }
-  };
-
-  const fetchMaterials = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(
-        `${API_BASE_URL}/documents/courses/${courseId}/materials`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (response.data.success) {
-        setMaterials(response.data.materials || []);
+  useEffect(() => {
+    fetchCourseDetails();
+    if (isAuthenticated) {
+      if (isAdmin) {
+        setIsEnrolled(true);
+        fetchVideos();
+        fetchMaterials();
+      } else if (isStudent) {
+        checkEnrollment();
       }
-    } catch (error) {
-      // ignore
     }
-  };
+  }, [
+    fetchCourseDetails,
+    fetchVideos,
+    fetchMaterials,
+    checkEnrollment,
+    isAuthenticated,
+    isStudent,
+    isAdmin,
+  ]);
 
   const downloadWithAuth = async (documentId, filename) => {
     try {

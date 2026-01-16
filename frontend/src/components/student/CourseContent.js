@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { Play, Clock, ArrowLeft, BookOpen } from "lucide-react";
@@ -7,7 +7,7 @@ import axios from "axios";
 const CourseContent = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated, isStudent, isAdmin } = useAuth();
+  const { isAuthenticated, isStudent } = useAuth();
   const [course, setCourse] = useState(null);
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,15 +18,7 @@ const CourseContent = () => {
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/");
-      return;
-    }
-    fetchCourseContent();
-  }, [courseId, isAuthenticated, navigate]);
-
-  const fetchCourseContent = async () => {
+  const fetchCourseContent = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -41,7 +33,6 @@ const CourseContent = () => {
         setSelectedVideo(response.data.videos[0]);
       }
 
-      // Fetch watched progress (if student)
       if (isStudent) {
         const profileRes = await axios.get(`${API_BASE_URL}/auth/profile`, {
           headers,
@@ -68,7 +59,15 @@ const CourseContent = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_BASE_URL, courseId, isStudent]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/");
+      return;
+    }
+    fetchCourseContent();
+  }, [courseId, isAuthenticated, navigate, fetchCourseContent]);
 
   const formatDuration = (seconds) => {
     const hours = Math.floor(seconds / 3600);

@@ -13,20 +13,22 @@ const StudentDashboard = () => {
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
 
   useEffect(() => {
-    fetchEnrollments();
-  }, []);
+    const fetchEnrollments = async () => {
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/payments/enrollments`
+        );
+        setEnrollments(response.data.enrollments);
+      } catch (error) {
+        console.error("Error fetching enrollments:", error);
+        setError("Failed to load enrollments");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const fetchEnrollments = async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/payments/enrollments`);
-      setEnrollments(response.data.enrollments);
-    } catch (error) {
-      console.error("Error fetching enrollments:", error);
-      setError("Failed to load enrollments");
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchEnrollments();
+  }, [API_BASE_URL]);
 
   const handleLogout = () => {
     logout();

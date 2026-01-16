@@ -1,6 +1,6 @@
 // c:\Sandhan\frontend\src\components\admin\AdminLayout.js
 import React, { useEffect, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   BookOpen,
   Play,
@@ -14,7 +14,6 @@ import axios from "axios";
 
 const AdminLayout = ({ children }) => {
   const [features, setFeatures] = useState([]);
-  const navigate = useNavigate();
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
 

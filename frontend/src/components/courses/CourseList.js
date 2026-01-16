@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, Play, Users, Clock } from "lucide-react";
 import axios from "axios";
@@ -12,11 +12,7 @@ const CourseList = () => {
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
 
-  useEffect(() => {
-    fetchCourses();
-  }, []);
-
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     try {
       console.log("Fetching courses from:", `${API_BASE_URL}/courses`);
       const response = await axios.get(`${API_BASE_URL}/courses`);
@@ -36,7 +32,11 @@ const CourseList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_BASE_URL]);
+
+  useEffect(() => {
+    fetchCourses();
+  }, [fetchCourses]);
 
   const handleCourseClick = (courseId) => {
     console.log("Navigating to course:", courseId);

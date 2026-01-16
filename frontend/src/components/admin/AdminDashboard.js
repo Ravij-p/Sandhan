@@ -6,9 +6,7 @@ import {
   BookOpen,
   Play,
   DollarSign,
-  TrendingUp,
   LogOut,
-  Plus,
   Settings,
   FileText,
   ShieldCheck,
@@ -53,22 +51,10 @@ const AdminDashboard = () => {
         // ignore
       }
     })();
-  }, [fetchDashboardData]);
+  }, [fetchDashboardData, API_BASE_URL]);
 
   const handleLogout = () => {
     logout();
-  };
-
-  const testCourseAPI = async () => {
-    try {
-      console.log("Testing course API...");
-      const response = await axios.get(`${API_BASE_URL}/courses/test/all`);
-      console.log("All courses response:", response.data);
-      alert(`Found ${response.data.totalCourses} total courses in database`);
-    } catch (error) {
-      console.error("Test API error:", error);
-      alert("Error testing API: " + error.message);
-    }
   };
 
   if (loading) {

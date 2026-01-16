@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  ChevronLeft,
-  ChevronRight,
   ChevronDown,
   Menu,
   User,
@@ -9,7 +7,6 @@ import {
 } from "lucide-react";
 import CoursePage from "./components/coursePages";
 import Header from "./components/Header";
-import { sliderCards, courseCards } from "./slides/sliderCards";
 import CardSlider from "./CardSlider";
 import { Routes, Route, useNavigate, NavLink } from "react-router-dom";
 import { AboutPage } from "./components/aboutPage";
@@ -42,19 +39,12 @@ import HomeAdOverlay from "./components/HomeAdOverlay";
 
 const AppContent = () => {
   const [isCoursesDropdownOpen, setIsCoursesDropdownOpen] = useState(false);
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
   const navigate = useNavigate();
   const { isAuthenticated, isStudent, isAdmin, logout } = useAuth();
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % 8);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Fetch courses for navbar
   useEffect(() => {

@@ -1,15 +1,22 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { BookOpen, ShoppingCart, CheckCircle, X, Smartphone, Apple } from "lucide-react";
+import {
+  BookOpen,
+  ShoppingCart,
+  CheckCircle,
+  X,
+  Smartphone,
+  Apple,
+} from "lucide-react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { QRCodeCanvas } from "qrcode.react";
 
 export const TestSeriesPage = () => {
-  const { isAuthenticated, isStudent, user } = useAuth();
+  const { user } = useAuth();
   const [testSeries, setTestSeries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
+
   // Payment States
   const [selectedSeries, setSelectedSeries] = useState(null);
   const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
@@ -21,7 +28,6 @@ export const TestSeriesPage = () => {
   const [upiUrl, setUpiUrl] = useState("");
   const [showQrCode, setShowQrCode] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
-  const [paymentStatus, setPaymentStatus] = useState("");
 
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
@@ -72,7 +78,6 @@ export const TestSeriesPage = () => {
   const handleBuyClick = (series) => {
     setSelectedSeries(series);
     setReceipt(null);
-    setPaymentStatus("");
     setShowEnrollmentModal(true);
   };
 
@@ -85,7 +90,7 @@ export const TestSeriesPage = () => {
       alert("Phone number must be 10 digits");
       return;
     }
-    
+
     try {
       // Use the updated endpoint that handles testSeriesId
       const res = await axios.post(
@@ -101,40 +106,18 @@ export const TestSeriesPage = () => {
       if (res.data.success) {
         const pa = process.env.UPI_VPA || "7600837122@hdfcbank";
         const pn = "Tushti IAS";
-        // Calculate amount with GST if needed, currently using flat price as per old code logic
-        // But CourseDetail adds 18% GST. Let's check if Test Series price is inclusive or exclusive.
-        // The old code just used `series.price`. I will assume it is inclusive for now to match old behavior, 
-        // OR I should follow CourseDetail pattern. 
-        // Let's stick to series.price as the "Amount" displayed. 
-        // Wait, CourseDetail adds 18% GST on top. 
-        // Let's assume the price displayed is base price and add GST like CourseDetail for consistency if requested.
-        // However, user said "Replicate course payment flow". 
-        // I will use the price from the series object directly for now to be safe, or add GST if I see it's standard.
-        // In CourseDetail: `Number(course.price) + 0.18 * Number(course.price)`
-        // I will do the same here for consistency.
-        const amountWithGst = String(
-          Number(selectedSeries.price) // + 0.18 * Number(selectedSeries.price) // Uncomment if GST needed
-          // Actually, let's just use the price as is for now, or maybe the backend expects it.
-          // The backend UpiPayment schema expects 'amount'.
-        );
-        
-        // Let's stick to exact price from DB to avoid confusion, unless explicitly told to add GST.
-        // CourseDetail explicitly shows "+ 18% GST". TestSeriesPage didn't.
-        
         const tn = `Payment for ${selectedSeries.title} - ${buyerEmail}`;
         const params = buildUpiParams({ pa, pn, am: selectedSeries.price, tn });
         const os = detectOS();
         const upiGeneric = `upi://pay?${params}`;
-        
+
         setUpiUrl(upiGeneric);
         setToastMsg(
           "After paying, your login credentials will be emailed to you. Please check your email."
         );
         setTimeout(() => setToastMsg(""), 6000);
-        
-        setPaymentStatus("pending");
         setShowPayLoader(true);
-        
+
         setTimeout(() => {
           setShowPayLoader(false);
           if (os === "android") {
@@ -186,11 +169,9 @@ export const TestSeriesPage = () => {
         const pn = "Tushti IAS";
         const tn = `Payment for ${selectedSeries.title} - ${buyerEmail}`;
         const params = buildUpiParams({ pa, pn, am: selectedSeries.price, tn });
-        
         setUpiUrl(`upi://pay?${params}`);
-        setPaymentStatus("pending");
         setShowPayLoader(true);
-        
+
         setTimeout(() => {
           setShowPayLoader(false);
           window.location.href = `${scheme}${
@@ -381,9 +362,11 @@ export const TestSeriesPage = () => {
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="mb-3">
-                  <label className="block text-xs text-gray-500 mb-1">Full Name</label>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Full Name
+                  </label>
                   <input
                     type="text"
                     value={buyerName}
@@ -394,7 +377,9 @@ export const TestSeriesPage = () => {
                 </div>
                 <div className="grid grid-cols-1 gap-3">
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Email ID</label>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Email ID
+                    </label>
                     <input
                       type="email"
                       value={buyerEmail}
@@ -404,7 +389,9 @@ export const TestSeriesPage = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Phone Number</label>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Phone Number
+                    </label>
                     <input
                       type="tel"
                       value={buyerPhone}
@@ -462,11 +449,11 @@ export const TestSeriesPage = () => {
                       </button>
                     );
                   })()}
-                  
+
                   <p className="text-xs text-gray-600 text-center">
                     Secure payment powered by UPI
                   </p>
-                  
+
                   {toastMsg && (
                     <div className="text-xs text-yellow-800 bg-yellow-50 border border-yellow-200 rounded p-2">
                       {toastMsg}
@@ -477,7 +464,8 @@ export const TestSeriesPage = () => {
                 <div className="space-y-4">
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <p className="text-sm text-yellow-800">
-                      Your payment is under verification. Within 24 hours, you’ll get access.
+                      Your payment is under verification. Within 24 hours,
+                      you’ll get access.
                     </p>
                   </div>
                   <div className="text-sm bg-gray-50 rounded-lg p-4">
@@ -529,13 +517,13 @@ export const TestSeriesPage = () => {
             </button>
             <h2 className="text-xl font-bold mb-4 text-center">Scan to Pay</h2>
             <div className="flex justify-center mb-4">
-                <QRCodeCanvas value={upiUrl} size={200} />
+              <QRCodeCanvas value={upiUrl} size={200} />
             </div>
             <p className="text-sm text-gray-600 mt-3 text-center">
               Scan with any UPI app (GPay, PhonePe, Paytm) to complete payment.
             </p>
             <p className="text-xs text-gray-500 mt-2 text-center">
-                After payment, please allow some time for verification.
+              After payment, please allow some time for verification.
             </p>
           </div>
         </div>

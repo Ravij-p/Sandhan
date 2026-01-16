@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Download, ArrowLeft, Lock } from "lucide-react";
+import { Download, ArrowLeft } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
 const CourseMaterials = () => {

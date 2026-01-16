@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 
 const AdminUpiApprovals = () => {
@@ -6,7 +6,7 @@ const AdminUpiApprovals = () => {
   const [loading, setLoading] = useState(true);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
 
-  const fetchPending = async () => {
+  const fetchPending = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.get(`${API_BASE_URL}/upi-payments/pending`, {
@@ -18,11 +18,11 @@ const AdminUpiApprovals = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_BASE_URL]);
 
   useEffect(() => {
     fetchPending();
-  }, []);
+  }, [fetchPending]);
 
   const act = async (id, action) => {
     const token = localStorage.getItem("token");

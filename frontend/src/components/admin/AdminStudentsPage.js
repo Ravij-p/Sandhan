@@ -116,10 +116,7 @@ const AdminStudentsPage = () => {
         mobile: enrollForm.mobile || undefined,
         amount: enrollForm.amount ? Number(enrollForm.amount) : undefined,
       };
-      const res = await axios.post(
-        `${API_BASE_URL}/admin/add-student-to-course`,
-        payload
-      );
+      await axios.post(`${API_BASE_URL}/admin/add-student-to-course`, payload);
       await fetchCourseStudents(selectedCourse);
       setEnrollForm({ email: "", mobile: "", amount: "" });
       alert("Student enrolled successfully");
@@ -170,13 +167,10 @@ const AdminStudentsPage = () => {
     }
     if (!window.confirm("Remove access for this student?")) return;
     try {
-      const res = await axios.post(
-        `${API_BASE_URL}/admin/remove-student-from-course`,
-        {
-          courseId: selectedCourse,
-          studentId,
-        }
-      );
+      await axios.post(`${API_BASE_URL}/admin/remove-student-from-course`, {
+        courseId: selectedCourse,
+        studentId,
+      });
       await fetchCourseStudents(selectedCourse);
       alert("Access removed");
     } catch (e) {

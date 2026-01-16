@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -17,7 +17,7 @@ import axios from "axios";
 const VideoPlayer = () => {
   const { courseId, videoId } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated, isStudent, isAdmin } = useAuth();
+  const { isAuthenticated, isStudent, isAdmin } = useAuth();
   const [course, setCourse] = useState(null);
   const [videos, setVideos] = useState([]);
   const [currentVideo, setCurrentVideo] = useState(null);
@@ -35,22 +35,48 @@ const VideoPlayer = () => {
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/");
-      return;
+  const fetchCourseVideos = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(
+        `${API_BASE_URL}/courses/${courseId}/videos`,
+        { headers }
+      );
+      setCourse(response.data.course);
+      setVideos(response.data.videos);
+    } catch (error) {
+      console.error("Error fetching course videos:", error);
+      setError("Failed to load course videos");
     }
+  }, [API_BASE_URL, courseId]);
 
-    checkEnrollment();
-  }, [courseId, isAuthenticated, isStudent, isAdmin, navigate]);
+  const fetchVideoDetails = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(
+        `${API_BASE_URL}/courses/${courseId}/videos/${videoId}`,
+        { headers }
+      );
+      setCurrentVideo(response.data.video);
+      setVideoUrl(response.data.video?.videoUrl);
 
-  useEffect(() => {
-    if (isEnrolled && videoId) {
-      fetchVideoDetails();
+      if (isStudent) {
+        const profileRes = await axios.get(`${API_BASE_URL}/auth/profile`, {
+          headers,
+        });
+        const progress = profileRes.data?.user?.watchedProgress || {};
+        const resume = progress[videoId] || 0;
+        setResumeTime(resume);
+      }
+    } catch (error) {
+      console.error("Error fetching video details:", error);
+      setError("Failed to load video");
     }
-  }, [isEnrolled, videoId]);
+  }, [API_BASE_URL, courseId, videoId, isStudent]);
 
-  const checkEnrollment = async () => {
+  const fetchEnrollmentAndVideos = useCallback(async () => {
     try {
       if (isAdmin) {
         setIsEnrolled(true);
@@ -74,46 +100,29 @@ const VideoPlayer = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    API_BASE_URL,
+    courseId,
+    isAdmin,
+    fetchCourseVideos,
+    fetchVideoDetails,
+    videoId,
+  ]);
 
-  const fetchCourseVideos = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await axios.get(
-        `${API_BASE_URL}/courses/${courseId}/videos`,
-        { headers }
-      );
-      setCourse(response.data.course);
-      setVideos(response.data.videos);
-    } catch (error) {
-      console.error("Error fetching course videos:", error);
-      setError("Failed to load course videos");
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/");
+      return;
     }
-  };
 
-  const fetchVideoDetails = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await axios.get(
-        `${API_BASE_URL}/courses/${courseId}/videos/${videoId}`,
-        { headers }
-      );
-      setCurrentVideo(response.data.video);
-      setVideoUrl(response.data.video?.videoUrl);
+    fetchEnrollmentAndVideos();
+  }, [courseId, isAuthenticated, fetchEnrollmentAndVideos, navigate]);
 
-      if (isStudent) {
-        const profileRes = await axios.get(`${API_BASE_URL}/auth/profile`, { headers });
-        const progress = profileRes.data?.user?.watchedProgress || {};
-        const resume = progress[videoId] || 0;
-        setResumeTime(resume);
-      }
-    } catch (error) {
-      console.error("Error fetching video details:", error);
-      setError("Failed to load video");
+  useEffect(() => {
+    if (isEnrolled && videoId) {
+      fetchVideoDetails();
     }
-  };
+  }, [isEnrolled, videoId, fetchVideoDetails]);
 
   const handleVideoSelect = (video) => {
     navigate(`/course/${courseId}/video/${video._id}`);

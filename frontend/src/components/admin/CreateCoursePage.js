@@ -1,13 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  Upload,
-  BookOpen,
-  DollarSign,
-  Calendar,
-  Tag,
-} from "lucide-react";
+import { ArrowLeft, BookOpen, DollarSign, Calendar, Tag } from "lucide-react";
 import axios from "axios";
 
 const CreateCoursePage = () => {

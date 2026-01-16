@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import {
   PieChart,
@@ -36,10 +36,10 @@ export default function ReportsPage() {
       .get(`${apiBaseURL}/stats`)
       .then((res) => setStats(res.data))
       .catch((err) => console.error("Stats fetch error:", err));
-  }, []);
+  }, [apiBaseURL]);
 
   // Fetch Payments
-  const fetchPayments = async (pageNo = 1) => {
+  const fetchPayments = useCallback(async (pageNo = 1) => {
     setLoading(true);
     try {
       const res = await axios.get(
@@ -52,11 +52,11 @@ export default function ReportsPage() {
       console.error("Payments fetch error:", err);
     }
     setLoading(false);
-  };
+  }, [apiBaseURL]);
 
   useEffect(() => {
     fetchPayments(page);
-  }, [page]);
+  }, [page, fetchPayments]);
 
   // Excel Download
   const handleExportExcel = () => {
