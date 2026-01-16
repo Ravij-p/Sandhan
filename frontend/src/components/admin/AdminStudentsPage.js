@@ -6,9 +6,11 @@ import { Search, UserPlus, UserMinus, Eye, EyeOff } from "lucide-react";
 const AdminStudentsPage = () => {
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [testSeries, setTestSeries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedCourse, setSelectedCourse] = useState("");
+  const [selectedTestSeries, setSelectedTestSeries] = useState("");
   const [courseStudents, setCourseStudents] = useState([]);
   const [enrollForm, setEnrollForm] = useState({
     email: "",
@@ -22,12 +24,19 @@ const AdminStudentsPage = () => {
   useEffect(() => {
     (async () => {
       try {
-        const [sRes, cRes] = await Promise.all([
+        const token = localStorage.getItem("token");
+        const [sRes, cRes, tsRes] = await Promise.all([
           axios.get(`${API_BASE_URL}/admin/students`),
           axios.get(`${API_BASE_URL}/admin/courses`),
+          axios.get(`${API_BASE_URL}/test-series/admin/all`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
         ]);
         setStudents(sRes.data.students || []);
         setCourses(cRes.data.courses || []);
+        setTestSeries(tsRes.data.testSeries || []);
       } catch (e) {
         // ignore
       } finally {
@@ -117,6 +126,39 @@ const AdminStudentsPage = () => {
     } catch (e) {
       const msg =
         e.response?.data?.error || e.message || "Failed to enroll student";
+      alert(msg);
+    }
+  };
+
+  const enrollStudentInTestSeries = async () => {
+    if (!selectedTestSeries) {
+      alert("Please select a test series first");
+      return;
+    }
+    try {
+      const token = localStorage.getItem("token");
+      const payload = {
+        testSeriesId: selectedTestSeries,
+        email: enrollForm.email || undefined,
+        studentId: undefined,
+        mobile: enrollForm.mobile || undefined,
+      };
+      await axios.post(
+        `${API_BASE_URL}/admin/add-student-to-test-series`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setEnrollForm({ email: "", mobile: "", amount: "" });
+      alert("Student enrolled to test series successfully");
+    } catch (e) {
+      const msg =
+        e.response?.data?.error ||
+        e.message ||
+        "Failed to enroll student to test series";
       alert(msg);
     }
   };
@@ -314,6 +356,40 @@ const AdminStudentsPage = () => {
                 </label>
               );
             })()}
+        </div>
+
+        <div className="mt-8 border-t pt-4">
+          <h3 className="font-medium text-gray-900 mb-3">
+            Enroll Student To Test Series
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+            <select
+              value={selectedTestSeries}
+              onChange={(e) => setSelectedTestSeries(e.target.value)}
+              className="px-3 py-2 border rounded"
+            >
+              <option value="">Select Test Series</option>
+              {testSeries.map((t) => (
+                <option key={t._id} value={t._id}>
+                  {t.title}
+                </option>
+              ))}
+            </select>
+            <input
+              placeholder="Student email"
+              value={enrollForm.email}
+              onChange={(e) =>
+                setEnrollForm({ ...enrollForm, email: e.target.value })
+              }
+              className="px-3 py-2 border rounded w-full"
+            />
+            <button
+              onClick={enrollStudentInTestSeries}
+              className="px-4 py-2 bg-blue-600 text-white rounded flex items-center justify-center"
+            >
+              <UserPlus size={16} className="mr-2" /> Enroll To Test Series
+            </button>
+          </div>
         </div>
 
         {selectedCourse && (

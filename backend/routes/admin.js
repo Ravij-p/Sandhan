@@ -5,6 +5,7 @@ const Video = require("../models/Video");
 const User = require("../models/User");
 const { verifyToken, requireAdmin } = require("../middleware/auth");
 const Admin = require("../models/Admin");
+const TestSeries = require("../models/TestSeries");
 const router = express.Router();
 
 // Get dashboard statistics
@@ -149,8 +150,10 @@ router.put("/students/:id", verifyToken, requireAdmin, async (req, res) => {
     }
 
     if (typeof isActive === "boolean") student.isActive = isActive;
-    if (typeof mailedCredentials === "boolean") student.mailedCredentials = mailedCredentials;
-    if (typeof enrollmentMailSent === "boolean") student.enrollmentMailSent = enrollmentMailSent;
+    if (typeof mailedCredentials === "boolean")
+      student.mailedCredentials = mailedCredentials;
+    if (typeof enrollmentMailSent === "boolean")
+      student.enrollmentMailSent = enrollmentMailSent;
     await student.save();
 
     res.json({
@@ -320,9 +323,9 @@ router.get(
         .skip((page - 1) * limit);
 
       // Get enrollment details for each student
-      const studentsWithEnrollment = students.map(student => {
+      const studentsWithEnrollment = students.map((student) => {
         const enrollment = student.enrolledCourses.find(
-          e => e.course.toString() === courseId && e.paymentStatus === "paid"
+          (e) => e.course.toString() === courseId && e.paymentStatus === "paid"
         );
         return {
           _id: student._id,
@@ -505,8 +508,8 @@ router.get("/features", verifyToken, requireAdmin, async (req, res) => {
             { method: "GET", route: "/api/admin/courses" },
             { method: "POST", route: "/api/courses" },
             { method: "PUT", route: "/api/courses/:id" },
-            { method: "DELETE", route: "/api/courses/:id" }
-          ]
+            { method: "DELETE", route: "/api/courses/:id" },
+          ],
         },
         {
           key: "manage_videos",
@@ -518,8 +521,11 @@ router.get("/features", verifyToken, requireAdmin, async (req, res) => {
             { method: "GET", route: "/api/admin/courses/:courseId/videos" },
             { method: "POST", route: "/api/courses/:id/videos" },
             { method: "PUT", route: "/api/courses/:courseId/videos/:videoId" },
-            { method: "DELETE", route: "/api/courses/:courseId/videos/:videoId" }
-          ]
+            {
+              method: "DELETE",
+              route: "/api/courses/:courseId/videos/:videoId",
+            },
+          ],
         },
         {
           key: "manage_documents",
@@ -531,8 +537,8 @@ router.get("/features", verifyToken, requireAdmin, async (req, res) => {
             { method: "POST", route: "/api/documents/courses/:courseId" },
             { method: "GET", route: "/api/documents/courses/:courseId" },
             { method: "PUT", route: "/api/documents/:documentId" },
-            { method: "DELETE", route: "/api/documents/:documentId" }
-          ]
+            { method: "DELETE", route: "/api/documents/:documentId" },
+          ],
         },
         {
           key: "upi_approvals",
@@ -543,8 +549,8 @@ router.get("/features", verifyToken, requireAdmin, async (req, res) => {
           api: [
             { method: "GET", route: "/api/upi-payments/pending" },
             { method: "POST", route: "/api/upi-payments/:id/approve" },
-            { method: "POST", route: "/api/upi-payments/:id/reject" }
-          ]
+            { method: "POST", route: "/api/upi-payments/:id/reject" },
+          ],
         },
         {
           key: "test_series",
@@ -556,8 +562,8 @@ router.get("/features", verifyToken, requireAdmin, async (req, res) => {
             { method: "GET", route: "/api/test-series/admin/all" },
             { method: "POST", route: "/api/test-series" },
             { method: "PUT", route: "/api/test-series/:id" },
-            { method: "DELETE", route: "/api/test-series/:id" }
-          ]
+            { method: "DELETE", route: "/api/test-series/:id" },
+          ],
         },
         {
           key: "homepage_ads",
@@ -568,10 +574,10 @@ router.get("/features", verifyToken, requireAdmin, async (req, res) => {
           api: [
             { method: "POST", route: "/api/homepage-ads" },
             { method: "GET", route: "/api/homepage-ads" },
-            { method: "GET", route: "/api/homepage-ads/public/active" }
-          ]
-        }
-      ]
+            { method: "GET", route: "/api/homepage-ads/public/active" },
+          ],
+        },
+      ],
     });
   } catch (e) {
     res.status(500).json({ error: "Failed to fetch admin features" });
@@ -595,7 +601,9 @@ router.post(
         student = await Student.findById(studentId);
       } else if (email || mobile) {
         student = await Student.findOne({
-          $or: [email ? { email } : null, mobile ? { mobile } : null].filter(Boolean),
+          $or: [email ? { email } : null, mobile ? { mobile } : null].filter(
+            Boolean
+          ),
         });
       }
       if (!student) return res.status(404).json({ error: "Student not found" });
@@ -616,7 +624,11 @@ router.post(
       });
       await student.save();
 
-      res.json({ success: true, message: "Student enrolled", studentId: student._id });
+      res.json({
+        success: true,
+        message: "Student enrolled",
+        studentId: student._id,
+      });
     } catch (e) {
       console.error("Admin enroll error:", e);
       res.status(500).json({ error: "Failed to enroll student" });
@@ -660,7 +672,8 @@ router.post(
   async (req, res) => {
     try {
       const { courseId, studentId, email, mobile, amount } = req.body;
-      if (!courseId) return res.status(400).json({ error: "courseId is required" });
+      if (!courseId)
+        return res.status(400).json({ error: "courseId is required" });
 
       const course = await Course.findById(courseId);
       if (!course) return res.status(404).json({ error: "Course not found" });
@@ -670,7 +683,9 @@ router.post(
         student = await Student.findById(studentId);
       } else if (email || mobile) {
         student = await Student.findOne({
-          $or: [email ? { email } : null, mobile ? { mobile } : null].filter(Boolean),
+          $or: [email ? { email } : null, mobile ? { mobile } : null].filter(
+            Boolean
+          ),
         });
       }
       if (!student) return res.status(404).json({ error: "Student not found" });
@@ -678,7 +693,8 @@ router.post(
       const already = student.enrolledCourses.some(
         (e) => e.course.toString() === courseId && e.paymentStatus === "paid"
       );
-      if (already) return res.status(400).json({ error: "Student already enrolled" });
+      if (already)
+        return res.status(400).json({ error: "Student already enrolled" });
 
       student.enrolledCourses.push({
         course: courseId,
@@ -689,10 +705,84 @@ router.post(
       });
       await student.save();
 
-      res.json({ success: true, message: "Student enrolled", studentId: student._id });
+      res.json({
+        success: true,
+        message: "Student enrolled",
+        studentId: student._id,
+      });
     } catch (e) {
       console.error("Admin enroll alias error:", e);
       res.status(500).json({ error: "Failed to enroll student" });
+    }
+  }
+);
+
+router.post(
+  "/add-student-to-test-series",
+  verifyToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { testSeriesId, studentId, email, mobile } = req.body;
+      if (!testSeriesId) {
+        return res.status(400).json({ error: "testSeriesId is required" });
+      }
+
+      const testSeries = await TestSeries.findById(testSeriesId);
+      if (!testSeries) {
+        return res.status(404).json({ error: "Test series not found" });
+      }
+
+      let student;
+      if (studentId) {
+        student = await Student.findById(studentId);
+      } else if (email || mobile) {
+        const normalizedEmail =
+          email && typeof email === "string"
+            ? email.trim().toLowerCase()
+            : null;
+        student = await Student.findOne({
+          $or: [
+            normalizedEmail ? { email: normalizedEmail } : null,
+            mobile ? { mobile } : null,
+          ].filter(Boolean),
+        });
+      }
+
+      if (!student) {
+        return res.status(404).json({ error: "Student not found" });
+      }
+
+      const already = student.purchasedTestSeries.some(
+        (e) =>
+          e.testSeries.toString() === testSeriesId && e.paymentStatus === "paid"
+      );
+
+      if (already) {
+        return res
+          .status(400)
+          .json({ error: "Student already enrolled in this test series" });
+      }
+
+      student.purchasedTestSeries.push({
+        testSeries: testSeriesId,
+        enrolledAt: new Date(),
+        paymentStatus: "paid",
+        receiptNumber: `TSADM${Date.now()}`,
+      });
+
+      await student.save();
+
+      res.json({
+        success: true,
+        message: "Student enrolled to test series",
+        studentId: student._id,
+      });
+    } catch (e) {
+      console.error("Admin enroll test series error:", e);
+      res
+        .status(500)
+        .json({ error: "Failed to enroll student to test series" });
     }
   }
 );
@@ -706,7 +796,9 @@ router.post(
     try {
       const { courseId, studentId } = req.body;
       if (!courseId || !studentId) {
-        return res.status(400).json({ error: "courseId and studentId are required" });
+        return res
+          .status(400)
+          .json({ error: "courseId and studentId are required" });
       }
 
       const student = await Student.findById(studentId);

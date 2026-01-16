@@ -18,7 +18,7 @@ const HomeAdOverlay = () => {
     // Static Ad Configuration
     const staticAd = {
       _id: "static_home_ad_001",
-      imageUrl: "/Ad.png",
+      imageUrl: "/Ad.jpeg",
       title: "Special Offer",
       redirectUrl: "/testSeries", // Add URL here if needed
     };
