@@ -9,7 +9,11 @@ const { v4: uuidv4 } = require("uuid");
 const moment = require("moment");
 const crypto = require("crypto");
 const PDFDocument = require("pdfkit");
+const Razorpay = require("razorpay");
 const User = require("./models/User");
+const Student = require("./models/Student");
+const Course = require("./models/Course");
+const TestSeries = require("./models/TestSeries");
 const { generateReceipt } = require("./utils/pdfGenerator");
 const { generateExcelReport } = require("./utils/excelGenerator");
 const { log } = require("console");
@@ -27,7 +31,46 @@ const adminHomepageAdsRoutes = require("./routes/adminHomepageAds");
 const app = express();
 const PORT = process.env.PORT || 5000;
 app.use(express.json());
-// Razorpay removed; using UPI manual verification flow
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_SECRET,
+});
+
+function generateRandomPassword(length = 8) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+async function getOrCreateStudentByEmail({ name, email, mobile }) {
+  const normalizedEmail = email.toLowerCase().trim();
+  let student = await Student.findOne({ email: normalizedEmail });
+  let generatedPassword = null;
+
+  if (!student) {
+    generatedPassword = generateRandomPassword(8);
+    student = new Student({
+      name,
+      email: normalizedEmail,
+      mobile,
+      password: generatedPassword,
+      tempPassword: generatedPassword,
+      mailedCredentials: false,
+      enrollmentMailSent: false,
+    });
+  } else {
+    if (mobile && mobile !== student.mobile) {
+      student.mobile = mobile;
+    }
+  }
+
+  await student.save();
+  return { student, generatedPassword };
+}
 
 // MongoDB Connection
 const connectDB = async () => {
@@ -68,7 +111,346 @@ if (!fs.existsSync(uploadsDir)) {
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/admin", adminRoutes);
+
+app.post("/api/payments/public/course/create-order", async (req, res) => {
+  try {
+    const { courseId, name, email, mobile } = req.body;
+
+    if (!courseId || !name || !email || !mobile) {
+      return res
+        .status(400)
+        .json({ error: "Course ID, name, email and mobile are required" });
+    }
+
+    const course = await Course.findById(courseId);
+    if (!course || !course.isActive) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    const { student } = await getOrCreateStudentByEmail({
+      name,
+      email,
+      mobile,
+    });
+
+    const baseAmount = course.price;
+    const gatewayFeePercent = 0.02;
+    const gstPercent = 0.18;
+    const totalDeductionPercent = gatewayFeePercent * (1 + gstPercent);
+    const amountToPay = Math.ceil(baseAmount / (1 - totalDeductionPercent));
+
+    const options = {
+      amount: amountToPay * 100,
+      currency: "INR",
+      receipt: `receipt_${Date.now()}`,
+      notes: {
+        studentId: student._id.toString(),
+        studentEmail: student.email,
+        courseId: courseId.toString(),
+        studentName: student.name,
+        courseName: course.title,
+        mobile: student.mobile,
+      },
+    };
+
+    const order = await razorpay.orders.create(options);
+    const serviceCharge = amountToPay - baseAmount;
+
+    res.json({
+      success: true,
+      orderId: order.id,
+      amount: amountToPay,
+      amountInPaise: order.amount,
+      currency: order.currency,
+      key: process.env.RAZORPAY_KEY_ID,
+      breakdown: {
+        baseAmount,
+        serviceCharge,
+        totalAmount: amountToPay,
+      },
+      course: {
+        id: course._id,
+        title: course.title,
+        price: course.price,
+      },
+    });
+  } catch (error) {
+    console.error("Public create course order error (app):", error);
+    res.status(500).json({ error: "Failed to create payment order" });
+  }
+});
+
+app.post("/api/payments/public/course/verify-payment", async (req, res) => {
+  try {
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      courseId,
+      email,
+      name,
+      mobile,
+    } = req.body;
+
+    if (
+      !razorpay_order_id ||
+      !razorpay_payment_id ||
+      !razorpay_signature ||
+      !courseId ||
+      !email
+    ) {
+      return res.status(400).json({ error: "Invalid payment data" });
+    }
+
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_SECRET)
+      .update(body.toString())
+      .digest("hex");
+
+    if (expectedSignature !== razorpay_signature) {
+      return res.status(400).json({ error: "Payment verification failed" });
+    }
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    const { student } = await getOrCreateStudentByEmail({
+      name: name || "",
+      email,
+      mobile,
+    });
+
+    const isAlreadyEnrolled = student.enrolledCourses.some(
+      (enrollment) =>
+        enrollment.course.toString() === courseId &&
+        enrollment.paymentStatus === "paid"
+    );
+
+    if (isAlreadyEnrolled) {
+      return res
+        .status(400)
+        .json({ error: "You are already enrolled in this course" });
+    }
+
+    const receiptNumber = `SDN${moment().format("YYYYMM")}${Math.floor(
+      Math.random() * 10000
+    )
+      .toString()
+      .padStart(4, "0")}`;
+
+    student.enrolledCourses.push({
+      course: courseId,
+      enrolledAt: new Date(),
+      paymentStatus: "paid",
+      receiptNumber,
+      amount: course.price,
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id,
+    });
+
+    await student.save();
+
+    const userData = {
+      name: student.name,
+      mobile: student.mobile,
+      course: course.title,
+      amount: course.price,
+      receiptNumber,
+      paymentDate: new Date(),
+      paymentStatus: "paid",
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id,
+      studentId: student._id,
+      courseId: course._id,
+    };
+
+    const user = new User(userData);
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Payment verified and enrollment successful",
+      receiptNumber,
+      course: {
+        id: course._id,
+        title: course.title,
+      },
+      enrollment: {
+        enrolledAt: new Date(),
+        receiptNumber,
+        amount: course.price,
+      },
+    });
+  } catch (error) {
+    console.error("Public course payment verification error (app):", error);
+    res.status(500).json({ error: "Payment verification failed" });
+  }
+});
+
+app.post("/api/payments/public/test-series/create-order", async (req, res) => {
+  try {
+    const { testSeriesId, name, email, mobile } = req.body;
+
+    if (!testSeriesId || !name || !email || !mobile) {
+      return res.status(400).json({
+        error: "Test Series ID, name, email and mobile are required",
+      });
+    }
+
+    const testSeries = await TestSeries.findById(testSeriesId);
+    if (!testSeries || !testSeries.isActive) {
+      return res.status(404).json({ error: "Test series not found" });
+    }
+
+    const { student } = await getOrCreateStudentByEmail({
+      name,
+      email,
+      mobile,
+    });
+
+    const baseAmount = testSeries.price;
+    const gatewayFeePercent = 0.02;
+    const gstPercent = 0.18;
+    const totalDeductionPercent = gatewayFeePercent * (1 + gstPercent);
+    const amountToPay = Math.ceil(baseAmount / (1 - totalDeductionPercent));
+
+    const options = {
+      amount: amountToPay * 100,
+      currency: "INR",
+      receipt: `testseries_${Date.now()}`,
+      notes: {
+        studentId: student._id.toString(),
+        studentEmail: student.email,
+        testSeriesId: testSeriesId.toString(),
+        studentName: student.name,
+        testSeriesName: testSeries.title,
+        mobile: student.mobile,
+      },
+    };
+
+    const order = await razorpay.orders.create(options);
+    const serviceCharge = amountToPay - baseAmount;
+
+    res.json({
+      success: true,
+      orderId: order.id,
+      amount: amountToPay,
+      amountInPaise: order.amount,
+      currency: order.currency,
+      key: process.env.RAZORPAY_KEY_ID,
+      breakdown: {
+        baseAmount,
+        serviceCharge,
+        totalAmount: amountToPay,
+      },
+      testSeries: {
+        id: testSeries._id,
+        title: testSeries.title,
+        price: testSeries.price,
+      },
+    });
+  } catch (error) {
+    console.error("Public create test series order error (app):", error);
+    res.status(500).json({ error: "Failed to create payment order" });
+  }
+});
+
+app.post(
+  "/api/payments/public/test-series/verify-payment",
+  async (req, res) => {
+    try {
+      const {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        testSeriesId,
+        email,
+        name,
+        mobile,
+      } = req.body;
+
+      if (
+        !razorpay_order_id ||
+        !razorpay_payment_id ||
+        !razorpay_signature ||
+        !testSeriesId ||
+        !email
+      ) {
+        return res.status(400).json({ error: "Invalid payment data" });
+      }
+
+      const body = razorpay_order_id + "|" + razorpay_payment_id;
+      const expectedSignature = crypto
+        .createHmac("sha256", process.env.RAZORPAY_SECRET)
+        .update(body.toString())
+        .digest("hex");
+
+      if (expectedSignature !== razorpay_signature) {
+        return res.status(400).json({ error: "Payment verification failed" });
+      }
+
+      const testSeries = await TestSeries.findById(testSeriesId);
+      if (!testSeries) {
+        return res.status(404).json({ error: "Test series not found" });
+      }
+
+      const { student } = await getOrCreateStudentByEmail({
+        name: name || "",
+        email,
+        mobile,
+      });
+
+      const isAlreadyPurchased = student.purchasedTestSeries.some(
+        (purchase) =>
+          purchase.testSeries.toString() === testSeriesId &&
+          purchase.paymentStatus === "paid"
+      );
+
+      if (isAlreadyPurchased) {
+        return res
+          .status(400)
+          .json({ error: "You have already purchased this test series" });
+      }
+
+      const receiptNumber = `TSN${moment().format("YYYYMM")}${Math.floor(
+        Math.random() * 10000
+      )
+        .toString()
+        .padStart(4, "0")}`;
+
+      student.purchasedTestSeries.push({
+        testSeries: testSeriesId,
+        paymentStatus: "paid",
+        enrolledAt: new Date(),
+        receiptNumber,
+        razorpayOrderId: razorpay_order_id,
+        razorpayPaymentId: razorpay_payment_id,
+      });
+
+      await student.save();
+
+      res.json({
+        success: true,
+        message: "Test series purchased successfully",
+        receiptNumber,
+        testSeries: {
+          id: testSeries._id,
+          title: testSeries.title,
+          price: testSeries.price,
+        },
+      });
+    } catch (error) {
+      console.error("Public verify test series payment error (app):", error);
+      res.status(500).json({ error: "Failed to verify payment" });
+    }
+  }
+);
+
 app.use("/api/payments", paymentRoutes);
+app.use("/payments", paymentRoutes);
 app.use("/api/test-series", testSeriesRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/homepage-ads", adminHomepageAdsRoutes);

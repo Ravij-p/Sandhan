@@ -12,7 +12,7 @@ import { useAuth } from "../context/AuthContext";
 import { QRCodeCanvas } from "qrcode.react";
 
 export const TestSeriesPage = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isStudent } = useAuth();
   const [testSeries, setTestSeries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,6 +28,10 @@ export const TestSeriesPage = () => {
   const [upiUrl, setUpiUrl] = useState("");
   const [showQrCode, setShowQrCode] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
+  const [priceDetails, setPriceDetails] = useState(null);
+  const [razorpayLoading, setRazorpayLoading] = useState(false);
+  const [razorpaySuccess, setRazorpaySuccess] = useState(false);
+  const [razorpayError, setRazorpayError] = useState("");
 
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
@@ -62,6 +66,12 @@ export const TestSeriesPage = () => {
     }
   }, [user]);
 
+  const buildUpiParams = ({ pa, pn, am, tn }) => {
+    const cu = "INR";
+    const params = new URLSearchParams({ pa, pn, am: String(am), cu, tn });
+    return params.toString();
+  };
+
   const detectOS = () => {
     const ua = navigator.userAgent || navigator.vendor || window.opera;
     if (/android/i.test(ua)) return "android";
@@ -69,15 +79,12 @@ export const TestSeriesPage = () => {
     return "other";
   };
 
-  const buildUpiParams = ({ pa, pn, am, tn }) => {
-    const cu = "INR";
-    const params = new URLSearchParams({ pa, pn, am: String(am), cu, tn });
-    return params.toString();
-  };
-
   const handleBuyClick = (series) => {
     setSelectedSeries(series);
     setReceipt(null);
+    setPriceDetails(null);
+    setRazorpaySuccess(false);
+    setRazorpayError("");
     setShowEnrollmentModal(true);
   };
 
@@ -361,6 +368,28 @@ export const TestSeriesPage = () => {
                       ₹{selectedSeries.price}
                     </span>
                   </div>
+                  {priceDetails && (
+                    <div className="mt-3 space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Base price</span>
+                        <span className="font-medium">
+                          ₹{priceDetails.baseAmount}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Gateway charges</span>
+                        <span className="font-medium">
+                          ₹{priceDetails.serviceCharge}
+                        </span>
+                      </div>
+                      <div className="flex justify-between font-semibold">
+                        <span className="text-gray-900">Total payable</span>
+                        <span className="text-gray-900">
+                          ₹{priceDetails.totalAmount}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mb-3">
@@ -403,109 +432,167 @@ export const TestSeriesPage = () => {
                 </div>
               </div>
 
-              {!receipt ? (
-                <div className="space-y-4">
-                  {(() => {
-                    const os = detectOS();
-                    if (os === "ios") {
-                      return (
-                        <div className="space-y-2">
-                          <div className="text-xs text-gray-600">
-                            Please select an app you have installed.
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            <button
-                              onClick={() => openSpecificUpi("gpay://")}
-                              disabled={showPayLoader}
-                              className="w-full px-3 py-2 bg-gray-900 text-white rounded-lg font-semibold hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                              <Apple size={16} /> GPay
-                            </button>
-                            <button
-                              onClick={() => openSpecificUpi("phonepe://")}
-                              disabled={showPayLoader}
-                              className="w-full px-3 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                              <Smartphone size={16} /> PhonePe
-                            </button>
-                            <button
-                              onClick={() => openSpecificUpi("paytmmp://")}
-                              disabled={showPayLoader}
-                              className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                              <Smartphone size={16} /> Paytm
-                            </button>
-                          </div>
-                        </div>
+              <div className="space-y-4">
+                <button
+                  onClick={async () => {
+                    if (!buyerName || !buyerEmail || !buyerPhone) {
+                      alert(
+                        "Please enter name, email and 10-digit phone number"
                       );
+                      return;
                     }
-                    return (
-                      <button
-                        onClick={handleInitiateUpi}
-                        disabled={showPayLoader}
-                        className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {showPayLoader ? "Processing…" : "Pay Now"}
-                      </button>
-                    );
-                  })()}
+                    if (!/^\d{10}$/.test(buyerPhone)) {
+                      alert("Phone number must be 10 digits");
+                      return;
+                    }
 
-                  <p className="text-xs text-gray-600 text-center">
-                    Secure payment powered by UPI
-                  </p>
+                    setRazorpayError("");
+                    setRazorpayLoading(true);
 
-                  {toastMsg && (
-                    <div className="text-xs text-yellow-800 bg-yellow-50 border border-yellow-200 rounded p-2">
-                      {toastMsg}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <p className="text-sm text-yellow-800">
-                      Your payment is under verification. Within 24 hours,
-                      you’ll get access.
-                    </p>
+                    try {
+                      if (!window.Razorpay) {
+                        await new Promise((resolve, reject) => {
+                          const script = document.createElement("script");
+                          script.src =
+                            "https://checkout.razorpay.com/v1/checkout.js";
+                          script.onload = resolve;
+                          script.onerror = reject;
+                          document.body.appendChild(script);
+                        });
+                      }
+
+                      const response = await axios.post(
+                        `${API_BASE_URL}/payments/public/test-series/create-order`,
+                        {
+                          testSeriesId: selectedSeries._id,
+                          name: buyerName,
+                          email: buyerEmail,
+                          mobile: buyerPhone,
+                        }
+                      );
+
+                      if (!response.data.success) {
+                        setRazorpayError(
+                          response.data.error ||
+                            "Failed to create payment order"
+                        );
+                        return;
+                      }
+
+                      const {
+                        orderId,
+                        amount,
+                        amountInPaise,
+                        currency,
+                        key,
+                        breakdown,
+                        testSeries,
+                      } = response.data;
+
+                      const details = breakdown || {
+                        baseAmount: testSeries.price,
+                        serviceCharge: amount - testSeries.price,
+                        totalAmount: amount,
+                      };
+
+                      setPriceDetails(details);
+
+                      const options = {
+                        key,
+                        amount: amountInPaise,
+                        currency,
+                        name: "Tushti IAS",
+                        description: testSeries.title,
+                        order_id: orderId,
+                        handler: async function (rzpResponse) {
+                          try {
+                            const verifyRes = await axios.post(
+                              `${API_BASE_URL}/payments/public/test-series/verify-payment`,
+                              {
+                                razorpay_order_id:
+                                  rzpResponse.razorpay_order_id,
+                                razorpay_payment_id:
+                                  rzpResponse.razorpay_payment_id,
+                                razorpay_signature:
+                                  rzpResponse.razorpay_signature,
+                                testSeriesId: testSeries.id,
+                                email: buyerEmail,
+                                name: buyerName,
+                                mobile: buyerPhone,
+                              }
+                            );
+
+                            if (verifyRes.data.success) {
+                              setRazorpaySuccess(true);
+                            } else {
+                              setRazorpayError(
+                                verifyRes.data.error ||
+                                  "Payment verification failed"
+                              );
+                            }
+                          } catch (err) {
+                            setRazorpayError(
+                              "Payment verification failed. Please contact support."
+                            );
+                          }
+                        },
+                        prefill: {
+                          name: buyerName,
+                          email: buyerEmail,
+                          contact: buyerPhone,
+                        },
+                        theme: {
+                          color: "#163233",
+                        },
+                      };
+
+                      const rzp = new window.Razorpay(options);
+                      rzp.open();
+                    } catch (err) {
+                      const message =
+                        (err.response &&
+                          err.response.data &&
+                          err.response.data.error) ||
+                        err.message ||
+                        "Failed to initiate payment. Please try again.";
+                      setRazorpayError(message);
+                    } finally {
+                      setRazorpayLoading(false);
+                    }
+                  }}
+                  disabled={razorpayLoading}
+                  className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {razorpayLoading ? "Processing…" : "Pay with Razorpay"}
+                </button>
+
+                {razorpaySuccess && (
+                  <div className="text-sm text-green-800 bg-green-50 border border-green-200 rounded p-3 text-center">
+                    Payment successful. You will receive your login details
+                    within 24 hours.
                   </div>
-                  <div className="text-sm bg-gray-50 rounded-lg p-4">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Name:</span>
-                      <span className="font-medium">{receipt.name}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Email:</span>
-                      <span className="font-medium">{receipt.email}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Item:</span>
-                      <span className="font-medium">{receipt.item}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Amount:</span>
-                      <span className="font-medium">₹{receipt.amount}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Status:</span>
-                      <span className="font-medium capitalize">
-                        {receipt.status}
-                      </span>
-                    </div>
+                )}
+
+                {razorpayError && (
+                  <div className="text-sm text-red-800 bg-red-50 border border-red-200 rounded p-3 text-center">
+                    {razorpayError}
                   </div>
-                  <button
-                    onClick={() => setShowEnrollmentModal(false)}
-                    className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
-                  >
-                    Close
-                  </button>
-                </div>
-              )}
+                )}
+
+                <p className="text-xs text-gray-600 text-center">
+                  Use a unique email. For further payments, use the same email.
+                </p>
+                <p className="text-xs text-gray-600 text-center">
+                  After any successful payment, you will receive your
+                  credentials within 24 hours. If not, please call the number
+                  shown on the home screen.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* QR Code Modal for Desktop */}
       {showQrCode && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white p-6 rounded-lg shadow-lg relative max-w-sm w-full">
