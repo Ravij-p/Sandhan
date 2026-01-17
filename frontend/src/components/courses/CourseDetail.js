@@ -10,8 +10,6 @@ import {
   CheckCircle,
   Download,
   X,
-  Smartphone,
-  Apple,
 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import axios from "axios";

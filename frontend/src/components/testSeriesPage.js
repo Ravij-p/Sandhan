@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  BookOpen,
-  ShoppingCart,
-  CheckCircle,
-  X,
-  Smartphone,
-  Apple,
-} from "lucide-react";
+import { BookOpen, ShoppingCart, CheckCircle, X } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { QRCodeCanvas } from "qrcode.react";
