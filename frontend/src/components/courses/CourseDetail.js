@@ -25,15 +25,14 @@ const CourseDetail = () => {
   const [error, setError] = useState("");
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
-  const [upiUrl, setUpiUrl] = useState("");
+  const [upiUrl] = useState("");
   const [showQrCode, setShowQrCode] = useState(false);
   const [receipt, setReceipt] = useState(null);
   const [buyerEmail, setBuyerEmail] = useState("");
   const [buyerPhone, setBuyerPhone] = useState("");
   const [buyerName, setBuyerName] = useState("");
-  const [toastMsg, setToastMsg] = useState("");
-  const [showPayLoader, setShowPayLoader] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState("");
+  const [showPayLoader] = useState(false);
+  const [paymentStatus] = useState("");
   const [priceDetails, setPriceDetails] = useState(null);
   const [razorpayLoading, setRazorpayLoading] = useState(false);
   const [razorpaySuccess, setRazorpaySuccess] = useState(false);
@@ -169,128 +168,6 @@ const CourseDetail = () => {
     setRazorpaySuccess(false);
     setRazorpayError("");
     setShowEnrollmentModal(true);
-  };
-
-  const detectOS = () => {
-    const ua = navigator.userAgent || navigator.vendor || window.opera;
-    if (/android/i.test(ua)) return "android";
-    if (/iPad|iPhone|iPod/.test(ua)) return "ios";
-    return "other";
-  };
-
-  const buildUpiParams = ({ pa, pn, am, tn }) => {
-    const cu = "INR";
-    const params = new URLSearchParams({ pa, pn, am: String(am), cu, tn });
-    return params.toString();
-  };
-
-  const openSpecificUpi = async (scheme) => {
-    if (!buyerName || !buyerEmail || !buyerPhone) {
-      alert("Please enter name, email and 10-digit phone number");
-      return;
-    }
-    if (!/^\d{10}$/.test(buyerPhone)) {
-      alert("Phone number must be 10 digits");
-      return;
-    }
-    try {
-      const res = await axios.post(
-        `${API_BASE_URL}/upi-payments/initiate-public`,
-        {
-          courseId,
-          email: buyerEmail,
-          phone: buyerPhone,
-          name: buyerName,
-        }
-      );
-      if (res.data.success) {
-        const pa = process.env.UPI_VPA || "7600837122@hdfcbank";
-        const pn = "Tushti IAS";
-        const amountWithGst = String(
-          Number(course.price) + 0.18 * Number(course.price)
-        );
-        const tn = `Payment for ${course.title} - ${buyerEmail}`;
-        const params = buildUpiParams({ pa, pn, am: amountWithGst, tn });
-        setUpiUrl(`upi://pay?${params}`);
-        setPaymentStatus("pending");
-        setShowPayLoader(true);
-        setTimeout(() => {
-          setShowPayLoader(false);
-          window.location.href = `${scheme}${
-            scheme.includes("gpay") ? "upi/pay?" : "pay?"
-          }${params}`;
-        }, 800);
-        setReceipt({
-          name: buyerName,
-          email: buyerEmail,
-          phone: buyerPhone,
-          course: course.title,
-          amount: course.price,
-          status: "pending",
-        });
-      }
-    } catch (e) {
-      alert("Failed to initiate UPI payment");
-    }
-  };
-
-  const handleInitiateUpi = async () => {
-    if (!buyerName || !buyerEmail || !buyerPhone) {
-      alert("Please enter name, email and 10-digit phone number");
-      return;
-    }
-    if (!/^\d{10}$/.test(buyerPhone)) {
-      alert("Phone number must be 10 digits");
-      return;
-    }
-    try {
-      const res = await axios.post(
-        `${API_BASE_URL}/upi-payments/initiate-public`,
-        {
-          courseId,
-          email: buyerEmail,
-          phone: buyerPhone,
-          name: buyerName,
-        }
-      );
-      if (res.data.success) {
-        const pa = process.env.UPI_VPA || "7600837122@hdfcbank";
-        const pn = "Tushti IAS";
-        const amountWithGst = String(
-          Number(course.price) + 0.18 * Number(course.price)
-        );
-        const tn = `Payment for ${course.title} - ${buyerEmail}`;
-        const params = buildUpiParams({ pa, pn, am: amountWithGst, tn });
-        const os = detectOS();
-        const upiGeneric = `upi://pay?${params}`;
-        setUpiUrl(upiGeneric);
-        setToastMsg(
-          "After paying, your login credentials will be emailed to you. Please check your email."
-        );
-        setTimeout(() => setToastMsg(""), 6000);
-        setPaymentStatus("pending");
-        setShowPayLoader(true);
-        setTimeout(() => {
-          setShowPayLoader(false);
-          if (os === "android") {
-            window.location.href = upiGeneric;
-          } else if (os === "other") {
-            setShowQrCode(true);
-          }
-          // ios: buttons are shown; do not auto-open
-        }, 1200);
-        setReceipt({
-          name: buyerName,
-          email: buyerEmail,
-          phone: buyerPhone,
-          course: course.title,
-          amount: course.price,
-          status: "pending",
-        });
-      }
-    } catch (e) {
-      alert("Failed to initiate UPI payment");
-    }
   };
 
   if (loading) {
