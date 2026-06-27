@@ -227,28 +227,31 @@ const CreateCoursePage = () => {
             </div>
 
             {/* Course Mode */}
-            {false && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Course Mode
-                </label>
-                <select
-                  value={course.courseMode}
-                  onChange={(e) =>
-                    setCourse({ ...course, courseMode: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="online">Online</option>
-                  <option value="offline">Offline</option>
-                </select>
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Course Mode *
+              </label>
+              <select
+                value={course.courseMode}
+                onChange={(e) =>
+                  setCourse({ ...course, courseMode: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="online">Online (Videos Available)</option>
+                <option value="offline">Offline (Classroom Only)</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Online courses have video content. Offline courses are classroom-based.
+              </p>
+            </div>
 
-            {false && (
+            {/* Location - Show only for offline courses */}
+            {course.courseMode === 'offline' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Location *
+                  Location/Center Address *
                 </label>
                 <input
                   type="text"
@@ -257,9 +260,12 @@ const CreateCoursePage = () => {
                     setCourse({ ...course, location: e.target.value })
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter center location"
+                  placeholder="Enter center location/address"
                   required
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Specify where offline classes will be conducted
+                </p>
               </div>
             )}
 

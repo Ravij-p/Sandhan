@@ -29,6 +29,7 @@ import AdminCoursePage from "./components/admin/AdminCoursePage";
 import CreateCoursePage from "./components/admin/CreateCoursePage";
 import AdminTestSeriesManagement from "./components/admin/AdminTestSeriesManagement";
 import AdminUpiApprovals from "./components/admin/AdminUpiApprovals";
+import ScrollToTop from "./components/ScrollToTop";
 
 const PRIMARY = "#51596c";
 const SECONDARY = "#c6b9a9";
@@ -236,7 +237,8 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen">
-<Header />
+      <ScrollToTop />
+      <Header />
       <Navigation />
       <Routes>
         <Route path="/" element={<HomePage />} />

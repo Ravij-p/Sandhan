@@ -15,12 +15,18 @@ const StudentDashboard = () => {
   useEffect(() => {
     const fetchEnrollments = async () => {
       try {
+        const token = localStorage.getItem("token");
         const response = await axios.get(
-          `${API_BASE_URL}/payments/enrollments`
+          `${API_BASE_URL}/payments/enrollments`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
         setEnrollments(response.data.enrollments);
       } catch (error) {
         console.error("Error fetching enrollments:", error);
+        console.error("API URL:", API_BASE_URL);
+        console.error("Token present:", !!localStorage.getItem("token"));
         setError("Failed to load enrollments");
       } finally {
         setLoading(false);

@@ -23,6 +23,8 @@ const AdminStudentsPage = () => {
     (async () => {
       try {
         const token = localStorage.getItem("token");
+        console.log('AdminStudentsPage - API URL:', API_BASE_URL);
+        console.log('AdminStudentsPage - Token present:', !!token);
         const h = { Authorization: `Bearer ${token}` };
         const [sRes, cRes, fnpRes] = await Promise.all([
           axios.get(`${API_BASE_URL}/admin/students?limit=200`, { headers: h }),
@@ -32,7 +34,11 @@ const AdminStudentsPage = () => {
         setStudents(sRes.data.students || []);
         setCourses(cRes.data.courses || []);
         setFormNotPaid(fnpRes.data.students || []);
-      } catch {}
+        console.log('AdminStudentsPage - Data loaded successfully');
+      } catch (err) {
+        console.error('AdminStudentsPage - Error:', err);
+        console.error('AdminStudentsPage - Error response:', err.response?.data);
+      }
       finally { setLoading(false); }
     })();
   }, []);

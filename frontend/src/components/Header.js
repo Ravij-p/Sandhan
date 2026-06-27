@@ -17,9 +17,9 @@ const Header = () => (
         </a>
 
         <a
-          href="tel:+918866993381"
+          href="tel:+919662211365"
           className="hover:text-[#f9dc41] transition-colors flex items-center"
-          title="+91 8866993381"
+          title="+91 9662211365"
         >
           <Phone size={18} className="mr-2" />
           <span>Call</span>

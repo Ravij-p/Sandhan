@@ -172,11 +172,27 @@ const CourseContent = () => {
                 </div>
               ) : (
                 <div className="aspect-video bg-gray-200 flex items-center justify-center">
-                  <div className="text-center">
-                    <Play className="mx-auto text-gray-400 mb-4 w-12 h-12 sm:w-12 sm:h-12" />
-                    <p className="text-sm sm:text-base text-gray-600">
-                      Select a video to start watching
-                    </p>
+                  <div className="text-center p-4">
+                    {videos.length === 0 ? (
+                      <>
+                        <p className="text-base sm:text-lg text-gray-700 font-medium">
+                          Thanks for buying!
+                        </p>
+                        <p className="text-sm sm:text-base text-gray-600 mt-2">
+                          Feel free to ask for any query on{" "}
+                          <a href="tel:+919662211365" className="text-blue-600 hover:underline font-semibold">
+                            +91 9662211365
+                          </a>
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="mx-auto text-gray-400 mb-4 w-12 h-12 sm:w-12 sm:h-12" />
+                        <p className="text-sm sm:text-base text-gray-600">
+                          Select a video to start watching
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
               )}

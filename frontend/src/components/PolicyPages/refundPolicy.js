@@ -26,7 +26,7 @@ const RefundPolicy = () => (
     <p>No refunds for digital services already delivered or consumed.</p>
 
     <h2 className="text-xl font-semibold mt-4">5. Contact</h2>
-    <p>For refund requests,+918866993381 with your order ID.</p>
+    <p>For refund requests,+9196662211365 with your order ID.</p>
   </div>
 );
 

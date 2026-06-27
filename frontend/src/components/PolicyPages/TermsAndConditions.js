@@ -25,7 +25,7 @@ const TermsAndConditions = () => (
     </p>
 
     <h2 className="text-xl font-semibold mt-4">5. Contact</h2>
-    <p>For queries, contact us at +918866993381.</p>
+    <p>For queries, contact us at +919662211365.</p>
   </div>
 );
 
