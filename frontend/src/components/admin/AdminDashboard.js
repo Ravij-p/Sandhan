@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import axios from "axios";
 
+const BG   = "#fcfcfc";
+const DARK = "#353841";
+const MID  = "#C8B8A9";
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -59,157 +63,84 @@ const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: BG }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto" style={{ borderColor: DARK }}></div>
+          <p className="mt-4 text-sm" style={{ color: MID }}>Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ backgroundColor: BG }}>
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="shadow-sm border-b" style={{ backgroundColor: BG, borderColor: MID }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 space-y-3 sm:space-y-0">
             <div className="flex items-center space-x-3 sm:space-x-4">
-              <img
-                src="/Logo.svg"
-                alt="Logo"
-                width={32}
-                height={32}
-                className="sm:w-10 sm:h-10"
-              />
+              <img src="/Logo.svg" alt="Logo" width={32} height={32} className="sm:w-10 sm:h-10" />
               <div>
-                <h1 className="text-lg sm:text-xl font-bold text-gray-900">
-                  Admin Dashboard
-                </h1>
-                <p className="text-xs sm:text-sm text-gray-600">
-                  Welcome, {user?.name}
-                </p>
+                <h1 className="text-lg sm:text-xl font-bold" style={{ color: DARK }}>Admin Dashboard</h1>
+                <p className="text-xs sm:text-sm" style={{ color: MID }}>Welcome, {user?.name}</p>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-              <button
-                onClick={handleLogout}
-                className="flex items-center space-x-2 px-3 py-2 text-xs sm:text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg w-full sm:w-auto justify-center sm:justify-start"
-              >
-                <LogOut size={14} className="sm:w-4 sm:h-4" />
-                <span>Logout</span>
-              </button>
-            </div>
+            <button onClick={handleLogout}
+              className="flex items-center space-x-2 px-3 py-2 text-xs sm:text-sm rounded-lg"
+              style={{ color: MID }}>
+              <LogOut size={14} /><span>Logout</span>
+            </button>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
-          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-            {error}
-          </div>
+          <div className="mb-6 p-4 rounded-lg border" style={{ color: DARK, borderColor: MID }}>{error}</div>
         )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Users className="text-blue-600 w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-              <div className="ml-3 sm:ml-4">
-                <p className="text-xs sm:text-sm font-medium text-gray-600">
-                  Total Students
-                </p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">
-                  {stats?.totalStudents || 0}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <BookOpen className="text-green-600 w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-              <div className="ml-3 sm:ml-4">
-                <p className="text-xs sm:text-sm font-medium text-gray-600">
-                  Total Courses
-                </p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">
-                  {stats?.totalCourses || 0}
-                </p>
+          {[
+            { label: "Total Students", value: stats?.totalStudents || 0, Icon: Users },
+            { label: "Total Courses",  value: stats?.totalCourses  || 0, Icon: BookOpen },
+            { label: "Total Videos",   value: stats?.totalVideos   || 0, Icon: Play },
+            { label: "Total Revenue",  value: `₹${stats?.totalRevenue?.toLocaleString() || 0}`, Icon: DollarSign },
+          ].map(({ label, value, Icon }) => (
+            <div key={label} className="rounded-lg shadow p-4 sm:p-6 border"
+              style={{ backgroundColor: BG, borderColor: MID }}>
+              <div className="flex items-center">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: MID + "40" }}>
+                  <Icon size={20} style={{ color: DARK }} />
+                </div>
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium" style={{ color: MID }}>{label}</p>
+                  <p className="text-xl sm:text-2xl font-bold" style={{ color: DARK }}>{value}</p>
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Play className="text-yellow-600 w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-              <div className="ml-3 sm:ml-4">
-                <p className="text-xs sm:text-sm font-medium text-gray-600">
-                  Total Videos
-                </p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">
-                  {stats?.totalVideos || 0}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <DollarSign className="text-purple-600 w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-              <div className="ml-3 sm:ml-4">
-                <p className="text-xs sm:text-sm font-medium text-gray-600">
-                  Total Revenue
-                </p>
-                <p className="text-lg sm:text-2xl font-bold text-gray-900">
-                  ₹{stats?.totalRevenue?.toLocaleString() || 0}
-                </p>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
           {/* Recent Enrollments */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900">
-                Recent Enrollments
-              </h2>
+          <div className="rounded-lg shadow border" style={{ backgroundColor: BG, borderColor: MID }}>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b" style={{ borderColor: MID }}>
+              <h2 className="text-base sm:text-lg font-semibold" style={{ color: DARK }}>Recent Enrollments</h2>
             </div>
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y" style={{ borderColor: MID }}>
               {recentEnrollments.length === 0 ? (
-                <div className="p-6 text-center text-gray-500">
-                  No recent enrollments
-                </div>
+                <div className="p-6 text-center text-sm" style={{ color: MID }}>No recent enrollments</div>
               ) : (
                 recentEnrollments.map((student) => (
-                  <div key={student._id} className="p-6">
+                  <div key={student._id} className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="text-sm font-medium text-gray-900">
-                          {student.name}
-                        </h3>
-                        <p className="text-sm text-gray-600">{student.email}</p>
-                        <p className="text-xs text-gray-500">
-                          {student.enrolledCourses?.length || 0} courses
-                          enrolled
-                        </p>
+                        <h3 className="text-sm font-medium" style={{ color: DARK }}>{student.name}</h3>
+                        <p className="text-sm" style={{ color: MID }}>{student.email}</p>
+                        <p className="text-xs" style={{ color: MID }}>{student.enrolledCourses?.length || 0} courses enrolled</p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xs text-gray-500">
-                          {new Date(student.updatedAt).toLocaleDateString()}
-                        </p>
-                      </div>
+                      <p className="text-xs" style={{ color: MID }}>{new Date(student.updatedAt).toLocaleDateString()}</p>
                     </div>
                   </div>
                 ))
@@ -218,34 +149,24 @@ const AdminDashboard = () => {
           </div>
 
           {/* Course Statistics */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Course Performance
-              </h2>
+          <div className="rounded-lg shadow border" style={{ backgroundColor: BG, borderColor: MID }}>
+            <div className="px-6 py-4 border-b" style={{ borderColor: MID }}>
+              <h2 className="text-lg font-semibold" style={{ color: DARK }}>Course Performance</h2>
             </div>
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y" style={{ borderColor: MID }}>
               {courseStats.length === 0 ? (
-                <div className="p-6 text-center text-gray-500">
-                  No course data available
-                </div>
+                <div className="p-6 text-center text-sm" style={{ color: MID }}>No course data available</div>
               ) : (
                 courseStats.map((course) => (
                   <div key={course._id} className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="text-sm font-medium text-gray-900">
-                          {course.title}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {course.enrollmentCount} students enrolled
-                        </p>
+                        <h3 className="text-sm font-medium" style={{ color: DARK }}>{course.title}</h3>
+                        <p className="text-sm" style={{ color: MID }}>{course.enrollmentCount} students enrolled</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-medium text-gray-900">
-                          ₹{course.totalRevenue?.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-gray-500">Revenue</p>
+                        <p className="text-sm font-medium" style={{ color: DARK }}>₹{course.totalRevenue?.toLocaleString()}</p>
+                        <p className="text-xs" style={{ color: MID }}>Revenue</p>
                       </div>
                     </div>
                   </div>
@@ -256,34 +177,25 @@ const AdminDashboard = () => {
         </div>
 
         {/* Admin Features */}
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Admin Features</h2>
+        <div className="mt-8 rounded-lg shadow p-6 border" style={{ backgroundColor: BG, borderColor: MID }}>
+          <h2 className="text-lg font-semibold mb-4" style={{ color: DARK }}>Admin Features</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {features.map((f) => {
-              const Icon = {
-                BookOpen,
-                Play,
-                FileText,
-                ShieldCheck,
-                Settings,
-                Image,
-              }[f.icon] || Settings;
+              const Icon = { BookOpen, Play, FileText, ShieldCheck, Settings, Image }[f.icon] || Settings;
               return (
-                <button
-                  key={f.key}
-                  onClick={() => navigate(f.path)}
-                  className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left"
-                >
-                  <Icon className="text-blue-600" size={24} />
+                <button key={f.key} onClick={() => navigate(f.path)}
+                  className="flex items-center space-x-3 p-4 border rounded-lg text-left"
+                  style={{ borderColor: MID, backgroundColor: BG }}>
+                  <Icon size={24} style={{ color: DARK }} />
                   <div>
-                    <h3 className="font-medium text-gray-900">{f.title}</h3>
-                    <p className="text-sm text-gray-600">{f.description}</p>
+                    <h3 className="font-medium" style={{ color: DARK }}>{f.title}</h3>
+                    <p className="text-sm" style={{ color: MID }}>{f.description}</p>
                   </div>
                 </button>
               );
             })}
             {features.length === 0 && (
-              <div className="text-sm text-gray-500">No features available</div>
+              <div className="text-sm" style={{ color: MID }}>No features available</div>
             )}
           </div>
         </div>

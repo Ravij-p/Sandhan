@@ -105,6 +105,10 @@ const studentSchema = new mongoose.Schema(
     lastLogin: {
       type: Date,
     },
+    formFilledAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -129,8 +133,6 @@ studentSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Index for efficient querying
-studentSchema.index({ email: 1 });
-studentSchema.index({ mobile: 1 });
+// Indexes already defined via unique:true on field definitions above
 
 module.exports = mongoose.model("Student", studentSchema);

@@ -1,32 +1,8 @@
 export const sliderCards = [
   {
     id: 1,
-    img_link: "CCE_ON.jpeg",
-    routing_link: "/courses",
-  },
-  {
-    id: 2,
-    img_link: "PSI_CONST_ON.jpeg",
-    routing_link: "/courses",
-  },
-  {
-    id: 3,
-    img_link: "PSI_ON.jpeg",
-    routing_link: "/courses",
-  },
-  {
-    id: 4,
-    img_link: "CCE_OFF.jpeg",
-    routing_link: "/courses",
-  },
-  {
-    id: 5,
-    img_link: "PSI_CONST_OFF.jpeg",
-    routing_link: "/courses",
-  },
-  {
-    id: 6,
-    img_link: "PSI_OFF.jpeg",
+    img_portrait: "/portrait_moving_photo.jpeg",
+    img_landscape: "/landscape_moving_photo.jpeg",
     routing_link: "/courses",
   },
 ];

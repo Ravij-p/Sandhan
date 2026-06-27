@@ -1,462 +1,234 @@
-// c:\Sandhan\frontend\src\components\admin\AdminStudentsPage.js
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Search, UserPlus, UserMinus, Eye, EyeOff } from "lucide-react";
+import { Search, AlertCircle, CheckCircle, Copy } from "lucide-react";
+
+const BG   = "#fcfcfc";
+const DARK = "#353841";
+const MID  = "#C8B8A9";
+
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
 
 const AdminStudentsPage = () => {
-  const [students, setStudents] = useState([]);
-  const [courses, setCourses] = useState([]);
-  const [testSeries, setTestSeries] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [students, setStudents]       = useState([]);
+  const [formNotPaid, setFormNotPaid] = useState([]);
+  const [courses, setCourses]         = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [search, setSearch]           = useState("");
+  const [activeTab, setActiveTab]     = useState("paid");
   const [selectedCourse, setSelectedCourse] = useState("");
-  const [selectedTestSeries, setSelectedTestSeries] = useState("");
   const [courseStudents, setCourseStudents] = useState([]);
-  const [enrollForm, setEnrollForm] = useState({
-    email: "",
-    mobile: "",
-    amount: "",
-  });
-  const [passwordVisible, setPasswordVisible] = useState({});
-  const API_BASE_URL =
-    process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
+  const [copied, setCopied]           = useState({});
 
   useEffect(() => {
     (async () => {
       try {
         const token = localStorage.getItem("token");
-        const [sRes, cRes, tsRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/admin/students`),
-          axios.get(`${API_BASE_URL}/admin/courses`),
-          axios.get(`${API_BASE_URL}/test-series/admin/all`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }),
+        const h = { Authorization: `Bearer ${token}` };
+        const [sRes, cRes, fnpRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/admin/students?limit=200`, { headers: h }),
+          axios.get(`${API_BASE_URL}/admin/courses`, { headers: h }),
+          axios.get(`${API_BASE_URL}/admin/students/form-not-paid`, { headers: h }),
         ]);
         setStudents(sRes.data.students || []);
         setCourses(cRes.data.courses || []);
-        setTestSeries(tsRes.data.testSeries || []);
-      } catch (e) {
-        // ignore
-      } finally {
-        setLoading(false);
-      }
+        setFormNotPaid(fnpRes.data.students || []);
+      } catch {}
+      finally { setLoading(false); }
     })();
-  }, [API_BASE_URL]);
+  }, []);
 
   const fetchCourseStudents = async (courseId) => {
+    if (!courseId) { setCourseStudents([]); return; }
     try {
-      const res = await axios.get(
-        `${API_BASE_URL}/admin/courses/${courseId}/students`
-      );
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${API_BASE_URL}/admin/courses/${courseId}/students`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setCourseStudents(res.data.students || []);
     } catch {}
   };
 
-  const togglePasswordVisibility = (id) => {
-    setPasswordVisible((prev) => ({ ...prev, [id]: !prev[id] }));
+  const copyPassword = (id, pwd) => {
+    navigator.clipboard.writeText(pwd).catch(() => {});
+    setCopied((p) => ({ ...p, [id]: true }));
+    setTimeout(() => setCopied((p) => ({ ...p, [id]: false })), 2000);
   };
 
-  const updateMailedFlag = async (studentId, mailed) => {
-    try {
-      await axios.put(`${API_BASE_URL}/admin/students/${studentId}`, {
-        mailedCredentials: mailed,
-      });
-      setStudents((prev) =>
-        prev.map((s) =>
-          s._id === studentId ? { ...s, mailedCredentials: mailed } : s
-        )
-      );
-      setCourseStudents((prev) =>
-        prev.map((s) =>
-          s._id === studentId ? { ...s, mailedCredentials: mailed } : s
-        )
-      );
-    } catch (e) {
-      alert(e.response?.data?.error || "Failed to update mailed flag");
-    }
-  };
+  const filtered = students.filter(
+    (s) =>
+      s.name?.toLowerCase().includes(search.toLowerCase()) ||
+      s.email?.toLowerCase().includes(search.toLowerCase()) ||
+      s.mobile?.includes(search)
+  );
+  const paidStudents = filtered.filter((s) =>
+    s.enrolledCourses?.some((e) => e.paymentStatus === "paid")
+  );
 
-  const updateEnrollmentMailFlagByEmail = async (email, mailed) => {
-    try {
-      const student = students.find((s) => s.email === email);
-      if (!student) {
-        alert("Student not found for this email");
-        return;
-      }
-      await axios.put(`${API_BASE_URL}/admin/students/${student._id}`, {
-        enrollmentMailSent: mailed,
-      });
-      setStudents((prev) =>
-        prev.map((s) =>
-          s._id === student._id ? { ...s, enrollmentMailSent: mailed } : s
-        )
-      );
-    } catch (e) {
-      alert(e.response?.data?.error || "Failed to update enrollment mail flag");
-    }
-  };
+  if (loading) return (
+    <div className="p-8 text-center" style={{ backgroundColor: BG }}>
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 mx-auto" style={{ borderColor: DARK }} />
+    </div>
+  );
 
-  const handleSelectCourse = (id) => {
-    setSelectedCourse(id);
-    if (id) fetchCourseStudents(id);
-  };
+  const Tab = ({ id, label, count }) => (
+    <button onClick={() => setActiveTab(id)}
+      className="px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+      style={{
+        backgroundColor: activeTab === id ? DARK : MID,
+        color: activeTab === id ? BG : DARK,
+      }}>
+      {label}{count !== undefined ? ` (${count})` : ""}
+    </button>
+  );
 
-  const enrollStudent = async () => {
-    if (!selectedCourse) {
-      alert("Please select a course first");
-      return;
-    }
-    try {
-      const payload = {
-        courseId: selectedCourse,
-        email: enrollForm.email || undefined,
-        studentId: undefined,
-        mobile: enrollForm.mobile || undefined,
-        amount: enrollForm.amount ? Number(enrollForm.amount) : undefined,
-      };
-      await axios.post(`${API_BASE_URL}/admin/add-student-to-course`, payload);
-      await fetchCourseStudents(selectedCourse);
-      setEnrollForm({ email: "", mobile: "", amount: "" });
-      alert("Student enrolled successfully");
-    } catch (e) {
-      const msg =
-        e.response?.data?.error || e.message || "Failed to enroll student";
-      alert(msg);
-    }
-  };
-
-  const enrollStudentInTestSeries = async () => {
-    if (!selectedTestSeries) {
-      alert("Please select a test series first");
-      return;
-    }
-    try {
-      const token = localStorage.getItem("token");
-      const payload = {
-        testSeriesId: selectedTestSeries,
-        email: enrollForm.email || undefined,
-        studentId: undefined,
-        mobile: enrollForm.mobile || undefined,
-      };
-      await axios.post(
-        `${API_BASE_URL}/admin/add-student-to-test-series`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setEnrollForm({ email: "", mobile: "", amount: "" });
-      alert("Student enrolled to test series successfully");
-    } catch (e) {
-      const msg =
-        e.response?.data?.error ||
-        e.message ||
-        "Failed to enroll student to test series";
-      alert(msg);
-    }
-  };
-
-  const removeAccess = async (studentId) => {
-    if (!selectedCourse) {
-      alert("Please select a course first");
-      return;
-    }
-    if (!window.confirm("Remove access for this student?")) return;
-    try {
-      await axios.post(`${API_BASE_URL}/admin/remove-student-from-course`, {
-        courseId: selectedCourse,
-        studentId,
-      });
-      await fetchCourseStudents(selectedCourse);
-      alert("Access removed");
-    } catch (e) {
-      alert(e.response?.data?.error || "Failed to remove access");
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto" />
-        <p className="text-center mt-4 text-gray-600">Loading students...</p>
-      </div>
-    );
-  }
+  const PasswordRow = ({ id, pwd }) => (
+    <div className="mt-2 flex items-center gap-2 flex-wrap">
+      <span className="text-xs" style={{ color: MID }}>Password:</span>
+      {pwd ? (
+        <>
+          <span className="text-xs font-mono px-2 py-1 rounded select-all"
+            style={{ backgroundColor: MID + "40", color: DARK }}>
+            {pwd}
+          </span>
+          <button onClick={() => copyPassword(id, pwd)}
+            className="flex items-center gap-1 text-xs px-2 py-1 rounded"
+            style={{ backgroundColor: copied[id] ? "#4ade80" : MID, color: DARK }}>
+            <Copy size={12} />
+            {copied[id] ? "Copied!" : "Copy"}
+          </button>
+          <span className="text-xs italic" style={{ color: MID }}>
+            Please copy password
+          </span>
+        </>
+      ) : (
+        <span className="text-xs" style={{ color: MID }}>No password assigned</span>
+      )}
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          All Students
-        </h2>
-        <div className="flex items-center mb-4">
-          <Search className="text-gray-400 mr-2" size={18} />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name/email/mobile"
-            className="flex-1 px-3 py-2 border rounded"
-          />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {students
-            .filter(
-              (s) =>
-                s.name.toLowerCase().includes(search.toLowerCase()) ||
-                s.email.toLowerCase().includes(search.toLowerCase()) ||
-                s.mobile.includes(search)
-            )
-            .slice(0, 10)
-            .map((s) => (
-              <div key={s._id} className="p-4 border rounded">
-                <div className="font-medium">{s.name}</div>
-                <div className="text-sm text-gray-600">{s.email}</div>
-                <div className="text-sm text-gray-600">{s.mobile}</div>
-                <div className="mt-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-600">Password:</span>
-                    {s.tempPassword ? (
-                      <>
-                        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-                          {passwordVisible[s._id]
-                            ? s.tempPassword
-                            : "•••••••••"}
-                        </span>
-                        <button
-                          onClick={() => togglePasswordVisibility(s._id)}
-                          className="text-xs px-2 py-1 border rounded hover:bg-gray-50"
-                          title={passwordVisible[s._id] ? "Hide" : "Show"}
-                        >
-                          {passwordVisible[s._id] ? (
-                            <EyeOff size={14} />
-                          ) : (
-                            <Eye size={14} />
-                          )}
-                        </button>
-                      </>
-                    ) : (
-                      <span className="text-xs text-gray-500">
-                        No password assigned
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-        </div>
+    <div className="space-y-5" style={{ backgroundColor: BG }}>
+      {/* Tabs */}
+      <div className="flex gap-2 flex-wrap">
+        <Tab id="paid"    label="Paid Students"           count={paidStudents.length} />
+        <Tab id="notpaid" label="Form Filled – Not Paid"  count={formNotPaid.length} />
+        <Tab id="course"  label="By Course" />
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Enroll / Manage Course Access
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <select
-            value={selectedCourse}
-            onChange={(e) => handleSelectCourse(e.target.value)}
-            className="px-3 py-2 border rounded"
-          >
-            <option value="">Select Course</option>
-            {courses.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.title}
-              </option>
-            ))}
-          </select>
-          <input
-            placeholder="Student email (optional)"
-            value={enrollForm.email}
-            onChange={(e) =>
-              setEnrollForm({ ...enrollForm, email: e.target.value })
-            }
-            className="px-3 py-2 border rounded"
-          />
-          <input
-            placeholder="Student mobile (optional)"
-            value={enrollForm.mobile}
-            onChange={(e) =>
-              setEnrollForm({ ...enrollForm, mobile: e.target.value })
-            }
-            className="px-3 py-2 border rounded"
-          />
-          <input
-            placeholder="Amount (optional)"
-            value={enrollForm.amount}
-            onChange={(e) =>
-              setEnrollForm({ ...enrollForm, amount: e.target.value })
-            }
-            className="px-3 py-2 border rounded"
-          />
-        </div>
-        <div className="flex gap-3 mt-4">
-          <button
-            onClick={enrollStudent}
-            className="px-4 py-2 bg-blue-600 text-white rounded flex items-center"
-          >
-            <UserPlus size={16} className="mr-2" /> Enroll
-          </button>
-          {selectedCourse &&
-            enrollForm.email &&
-            (() => {
-              const courseName =
-                courses.find((c) => c._id === selectedCourse)?.title ||
-                "Course";
-              const student = students.find(
-                (s) => s.email === enrollForm.email
-              );
-              const password = student?.tempPassword || "";
-              const subject = `Tushti IAS : Enrollment Confirmation and Login Credentials`;
-              const body = `Dear Student,\n\nYou have been successfully enrolled in the course ${courseName}.\n\nHere are your login credentials:\nEmail: ${enrollForm.email}\nPassword: ${password}\n\nPlease keep these details confidential.\n\nRegards,\nTushti IAS Support Team`;
-              const href = `mailto:${
-                enrollForm.email
-              }?subject=${encodeURIComponent(
-                subject
-              )}&body=${encodeURIComponent(body)}`;
-              return (
-                <a href={href} target="_blank" rel="noopener noreferrer">
-                  <button
-                    className="px-4 py-2 border rounded hover:bg-gray-50"
-                    title="Send Enrollment & Credentials Mail"
-                  >
-                    Send Enrollment & Credentials Mail
-                  </button>
-                </a>
-              );
-            })()}
-          {selectedCourse &&
-            enrollForm.email &&
-            (() => {
-              const student = students.find(
-                (s) => s.email === enrollForm.email
-              );
-              const checked = !!student?.enrollmentMailSent;
-              return (
-                <label className="flex items-center gap-2 text-xs">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(e) =>
-                      updateEnrollmentMailFlagByEmail(
-                        enrollForm.email,
-                        e.target.checked
-                      )
-                    }
-                  />
-                  Mail Sent
-                </label>
-              );
-            })()}
-        </div>
-
-        <div className="mt-8 border-t pt-4">
-          <h3 className="font-medium text-gray-900 mb-3">
-            Enroll Student To Test Series
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-            <select
-              value={selectedTestSeries}
-              onChange={(e) => setSelectedTestSeries(e.target.value)}
-              className="px-3 py-2 border rounded"
-            >
-              <option value="">Select Test Series</option>
-              {testSeries.map((t) => (
-                <option key={t._id} value={t._id}>
-                  {t.title}
-                </option>
-              ))}
-            </select>
-            <input
-              placeholder="Student email"
-              value={enrollForm.email}
-              onChange={(e) =>
-                setEnrollForm({ ...enrollForm, email: e.target.value })
-              }
-              className="px-3 py-2 border rounded w-full"
-            />
-            <button
-              onClick={enrollStudentInTestSeries}
-              className="px-4 py-2 bg-blue-600 text-white rounded flex items-center justify-center"
-            >
-              <UserPlus size={16} className="mr-2" /> Enroll To Test Series
-            </button>
+      {/* ── PAID STUDENTS ── */}
+      {activeTab === "paid" && (
+        <div className="rounded-xl shadow p-5" style={{ backgroundColor: BG, border: `1px solid ${MID}` }}>
+          <div className="flex items-center gap-2 mb-4">
+            <CheckCircle size={18} style={{ color: DARK }} />
+            <h2 className="font-semibold text-base" style={{ color: DARK }}>Paid Students</h2>
           </div>
-        </div>
-
-        {selectedCourse && (
-          <div className="mt-6">
-            <h3 className="font-medium text-gray-900 mb-2">
-              Students in selected course
-            </h3>
-            <div className="divide-y">
-              {courseStudents.map((cs) => (
-                <div
-                  key={cs._id}
-                  className="flex items-center justify-between py-3"
-                >
-                  <div>
-                    <div className="font-medium">{cs.name}</div>
-                    <div className="text-sm text-gray-600 flex items-center justify-between">
-                      <span>
-                        {cs.email} · {cs.mobile}
+          <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg border"
+            style={{ borderColor: MID }}>
+            <Search size={16} style={{ color: MID }} />
+            <input value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search name / email / mobile"
+              className="flex-1 text-sm outline-none bg-transparent"
+              style={{ color: DARK }} />
+          </div>
+          {paidStudents.length === 0 ? (
+            <p className="text-sm" style={{ color: MID }}>No paid students found.</p>
+          ) : (
+            <div className="space-y-3">
+              {paidStudents.map((s) => (
+                <div key={s._id} className="p-4 rounded-lg border"
+                  style={{ borderColor: MID, backgroundColor: BG }}>
+                  <div className="font-medium" style={{ color: DARK }}>{s.name}</div>
+                  <div className="text-sm" style={{ color: MID }}>{s.email} · {s.mobile}</div>
+                  <div className="text-xs mt-1" style={{ color: DARK }}>
+                    {s.enrolledCourses?.filter((e) => e.paymentStatus === "paid").map((e, i) => (
+                      <span key={i} className="inline-block mr-2 px-2 py-0.5 rounded text-xs"
+                        style={{ backgroundColor: MID + "50", color: DARK }}>
+                        {e.course?.title || "Course"}
                       </span>
-                      <label className="flex items-center gap-1 text-xs">
-                        <input
-                          type="checkbox"
-                          checked={!!cs.mailedCredentials}
-                          onChange={(e) =>
-                            updateMailedFlag(cs._id, e.target.checked)
-                          }
-                        />
-                        Mailed
-                      </label>
-                    </div>
-                    <div className="mt-1 flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-gray-600">Password:</span>
-                      {cs.tempPassword ? (
-                        <>
-                          <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-                            {passwordVisible[cs._id]
-                              ? cs.tempPassword
-                              : "•••••••••"}
-                          </span>
-                          <button
-                            onClick={() => togglePasswordVisibility(cs._id)}
-                            className="text-xs px-2 py-1 border rounded hover:bg-gray-50"
-                            title={passwordVisible[cs._id] ? "Hide" : "Show"}
-                          >
-                            {passwordVisible[cs._id] ? (
-                              <EyeOff size={14} />
-                            ) : (
-                              <Eye size={14} />
-                            )}
-                          </button>
-                        </>
-                      ) : (
-                        <span className="text-xs text-gray-500">
-                          No password assigned
-                        </span>
-                      )}
-                    </div>
+                    ))}
                   </div>
-                  <button
-                    onClick={() => removeAccess(cs._id)}
-                    className="px-3 py-2 border rounded text-red-600 hover:bg-red-50 flex items-center"
-                  >
-                    <UserMinus size={16} className="mr-2" /> Remove
-                  </button>
+                  <PasswordRow id={s._id} pwd={s.tempPassword} />
                 </div>
               ))}
-              {courseStudents.length === 0 && (
-                <div className="text-sm text-gray-500">No students</div>
-              )}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* ── FORM FILLED NOT PAID ── */}
+      {activeTab === "notpaid" && (
+        <div className="rounded-xl shadow p-5" style={{ backgroundColor: BG, border: `1px solid ${MID}` }}>
+          <div className="flex items-center gap-2 mb-2">
+            <AlertCircle size={18} style={{ color: MID }} />
+            <h2 className="font-semibold text-base" style={{ color: DARK }}>Form Filled — Not Paid</h2>
           </div>
-        )}
-      </div>
+          <p className="text-sm mb-4" style={{ color: MID }}>
+            Filled enrollment form but payment not completed.
+          </p>
+          {formNotPaid.length === 0 ? (
+            <p className="text-sm" style={{ color: MID }}>No pending students.</p>
+          ) : (
+            <div className="space-y-2">
+              {formNotPaid.map((s) => (
+                <div key={s._id} className="flex items-start justify-between py-3 border-b"
+                  style={{ borderColor: MID + "60" }}>
+                  <div>
+                    <div className="font-medium text-sm" style={{ color: DARK }}>{s.name}</div>
+                    <div className="text-xs" style={{ color: MID }}>{s.email} · {s.mobile}</div>
+                    <div className="text-xs mt-0.5" style={{ color: MID }}>
+                      {new Date(s.formFilledAt || s.createdAt).toLocaleDateString("en-IN")}
+                    </div>
+                  </div>
+                  <span className="text-xs px-2 py-1 rounded-full"
+                    style={{ backgroundColor: MID + "50", color: DARK }}>Not Paid</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── BY COURSE ── */}
+      {activeTab === "course" && (
+        <div className="rounded-xl shadow p-5" style={{ backgroundColor: BG, border: `1px solid ${MID}` }}>
+          <h2 className="font-semibold text-base mb-4" style={{ color: DARK }}>Students by Course</h2>
+          <select value={selectedCourse}
+            onChange={(e) => { setSelectedCourse(e.target.value); fetchCourseStudents(e.target.value); }}
+            className="w-full px-3 py-2 border rounded-lg text-sm outline-none mb-4"
+            style={{ borderColor: MID, color: DARK, backgroundColor: BG }}>
+            <option value="">Select a course</option>
+            {courses.map((c) => <option key={c._id} value={c._id}>{c.title}</option>)}
+          </select>
+
+          {selectedCourse && (
+            courseStudents.length === 0 ? (
+              <p className="text-sm" style={{ color: MID }}>No students enrolled in this course.</p>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs font-medium" style={{ color: MID }}>{courseStudents.length} student(s)</p>
+                {courseStudents.map((cs) => (
+                  <div key={cs._id} className="p-4 rounded-lg border"
+                    style={{ borderColor: MID, backgroundColor: BG }}>
+                    <div className="font-medium" style={{ color: DARK }}>{cs.name}</div>
+                    <div className="text-sm" style={{ color: MID }}>{cs.email} · {cs.mobile}</div>
+                    {cs.receiptNumber && (
+                      <div className="text-xs mt-1 font-mono" style={{ color: MID }}>
+                        Receipt: {cs.receiptNumber}
+                      </div>
+                    )}
+                    {cs.amount && (
+                      <div className="text-xs" style={{ color: MID }}>
+                        Paid: ₹{cs.amount.toLocaleString()}
+                      </div>
+                    )}
+                    <PasswordRow id={cs._id} pwd={cs.tempPassword} />
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+        </div>
+      )}
     </div>
   );
 };

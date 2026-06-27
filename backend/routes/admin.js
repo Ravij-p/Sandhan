@@ -78,6 +78,25 @@ router.get("/dashboard", verifyToken, requireAdmin, async (req, res) => {
   }
 });
 
+// Students who filled the form but have NOT paid — MUST be before /students/:id
+router.get("/students/form-not-paid", verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const students = await Student.find({
+      formFilledAt: { $ne: null },
+      isActive: true,
+    }).select("name email mobile formFilledAt enrolledCourses createdAt");
+
+    const notPaid = students.filter(
+      (s) => !s.enrolledCourses.some((e) => e.paymentStatus === "paid")
+    );
+
+    res.json({ success: true, students: notPaid });
+  } catch (error) {
+    console.error("Form not paid fetch error:", error);
+    res.status(500).json({ error: "Failed to fetch students" });
+  }
+});
+
 // Get all students with enrollment details
 router.get("/students", verifyToken, requireAdmin, async (req, res) => {
   try {
@@ -121,6 +140,9 @@ router.get("/students", verifyToken, requireAdmin, async (req, res) => {
 // Get student details by ID
 router.get("/students/:id", verifyToken, requireAdmin, async (req, res) => {
   try {
+    if (!req.params.id.match(/^[a-fA-F0-9]{24}$/)) {
+      return res.status(400).json({ error: "Invalid student ID" });
+    }
     const student = await Student.findById(req.params.id)
       .populate("enrolledCourses.course", "title description price")
       .select("-password");
@@ -317,7 +339,7 @@ router.get(
         "enrolledCourses.paymentStatus": "paid",
         isActive: true,
       })
-        .select("name email mobile enrolledCourses createdAt")
+        .select("name email mobile enrolledCourses tempPassword createdAt")
         .sort({ createdAt: -1 })
         .limit(limit * 1)
         .skip((page - 1) * limit);
@@ -335,6 +357,7 @@ router.get(
           enrolledAt: enrollment?.enrolledAt || student.createdAt,
           receiptNumber: enrollment?.receiptNumber,
           amount: enrollment?.amount,
+          tempPassword: student.tempPassword,
         };
       });
 
@@ -787,7 +810,7 @@ router.post(
   }
 );
 
-// Alias route: remove student access from a course
+
 router.post(
   "/remove-student-from-course",
   verifyToken,

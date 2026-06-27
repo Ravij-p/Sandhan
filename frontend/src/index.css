@@ -5,6 +5,12 @@
 /* Import responsive styles */
 @import './responsive.css';
 
+:root {
+  --color-primary: #51596c;
+  --color-secondary: #c6b9a9;
+  --color-accent: #dad9d7;
+}
+
 html, body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',

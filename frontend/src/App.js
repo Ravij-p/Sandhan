@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  ChevronDown,
-  Menu,
-  User,
-  LogOut,
-} from "lucide-react";
+import { ChevronDown, Menu, User, LogOut } from "lucide-react";
 import CoursePage from "./components/coursePages";
 import Header from "./components/Header";
 import CardSlider from "./CardSlider";
@@ -18,7 +13,6 @@ import ContactPage from "./components/PolicyPages/ContactPage";
 import ShippingPolicy from "./components/PolicyPages/shippingPage";
 import ReportsPage from "./components/Reports";
 
-// New components
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import AuthModal from "./components/auth/AuthModal";
 import StudentDashboard from "./components/student/StudentDashboard";
@@ -35,7 +29,10 @@ import AdminCoursePage from "./components/admin/AdminCoursePage";
 import CreateCoursePage from "./components/admin/CreateCoursePage";
 import AdminTestSeriesManagement from "./components/admin/AdminTestSeriesManagement";
 import AdminUpiApprovals from "./components/admin/AdminUpiApprovals";
-import HomeAdOverlay from "./components/HomeAdOverlay";
+
+const PRIMARY = "#51596c";
+const SECONDARY = "#c6b9a9";
+const ACCENT = "#dad9d7";
 
 const AppContent = () => {
   const [isCoursesDropdownOpen, setIsCoursesDropdownOpen] = useState(false);
@@ -46,397 +43,157 @@ const AppContent = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isStudent, isAdmin, logout } = useAuth();
 
-  // Fetch courses for navbar
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await fetch(
-          `${
-            process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api"
-          }/courses`
+        const res = await fetch(
+          `${process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api"}/courses`
         );
-        const data = await response.json();
-        if (data.success) {
-          setCourses(data.courses);
-        }
-      } catch (error) {
-        console.error("Error fetching courses for navbar:", error);
-      } finally {
-        setLoadingCourses(false);
-      }
+        const data = await res.json();
+        if (data.success) setCourses(data.courses);
+      } catch {}
+      finally { setLoadingCourses(false); }
     };
-
     fetchCourses();
   }, []);
+
+  const navLinkStyle = ({ isActive }) => ({
+    color: isActive ? "#ffffff" : SECONDARY,
+    backgroundColor: isActive ? "rgba(255,255,255,0.15)" : "transparent",
+  });
+
   const Navigation = () => (
-    <nav className="fixed top-8 left-0 right-0 z-50 bg-[#f9dc41] shadow-md px-4">
+    <nav className="fixed top-8 left-0 right-0 z-50 shadow-md px-4" style={{ backgroundColor: PRIMARY }}>
       <div className="container mx-auto flex items-center justify-between py-2 sm:py-3">
         <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
-          <img
-            src="/IAS-Logo-Design.svg"
-            alt="Logo"
-            width={160}
-            height={80}
-            className="sm:w-12 sm:h-12 flex-shrink-0"
-          />
-          <h1 className="text-sm sm:text-lg lg:text-xl font-bold text-gray-800 truncate">
-            TUSHTI IAS
-          </h1>
+          <img src="/IAS-Logo-Design.svg" alt="Logo" width={160} height={80} className="sm:w-12 sm:h-12 flex-shrink-0" />
+          <h1 className="text-sm sm:text-lg lg:text-xl font-bold truncate" style={{ color: ACCENT }}>TUSHTI IAS</h1>
         </div>
-        <div className="hidden lg:flex items-center space-x-6">
-          <NavLink
-            to="/"
-            className={({ isActive }) =>
-              `px-3 py-2 rounded ${
-                isActive
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-800 hover:bg-gray-200"
-              }`
-            }
-          >
-            Home
-          </NavLink>
-          <div className="relative">
-            <button
-              onClick={() => setIsCoursesDropdownOpen(!isCoursesDropdownOpen)}
-              className="flex items-center space-x-1 px-3 py-2 rounded text-gray-800 hover:bg-gray-200"
-            >
-              <span>Courses</span>
-              <ChevronDown size={16} />
-            </button>
 
+        {/* Desktop */}
+        <div className="hidden lg:flex items-center space-x-2">
+          <NavLink to="/" className="px-3 py-2 rounded font-medium" style={navLinkStyle}>Home</NavLink>
+
+          <div className="relative">
+            <button onClick={() => setIsCoursesDropdownOpen(!isCoursesDropdownOpen)}
+              className="flex items-center space-x-1 px-3 py-2 rounded font-medium"
+              style={{ color: SECONDARY }}>
+              <span>Courses</span><ChevronDown size={16} />
+            </button>
             {isCoursesDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border min-w-48 z-50">
-                <button
-                  onClick={() => {
-                    navigate("/courses");
-                    setIsCoursesDropdownOpen(false);
-                  }}
-                  className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-t-lg"
-                >
-                  All Courses
-                </button>
-                {loadingCourses ? (
-                  <div className="px-4 py-2 text-gray-500 text-sm">
-                    Loading...
-                  </div>
-                ) : (
-                  courses.map((course, idx) => (
-                    <button
-                      key={course._id}
-                      onClick={() => {
-                        navigate(`/course/${course._id}`);
-                        setIsCoursesDropdownOpen(false);
-                      }}
-                      className={`block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 ${
-                        idx === courses.length - 1 ? "rounded-b-lg" : ""
-                      }`}
-                    >
-                      {course.title}
-                    </button>
-                  ))
-                )}
+              <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border min-w-48 z-50"
+                style={{ borderColor: SECONDARY }}>
+                <button onClick={() => { navigate("/courses"); setIsCoursesDropdownOpen(false); }}
+                  className="block w-full text-left px-4 py-2 rounded-t-lg hover:opacity-80"
+                  style={{ color: PRIMARY }}>All Courses</button>
+                {loadingCourses
+                  ? <div className="px-4 py-2 text-sm" style={{ color: SECONDARY }}>Loading...</div>
+                  : courses.map((c, idx) => (
+                    <button key={c._id}
+                      onClick={() => { navigate(`/course/${c._id}`); setIsCoursesDropdownOpen(false); }}
+                      className={`block w-full text-left px-4 py-2 hover:opacity-80 ${idx === courses.length - 1 ? "rounded-b-lg" : ""}`}
+                      style={{ color: PRIMARY }}>{c.title}</button>
+                  ))}
               </div>
             )}
           </div>
 
-          <NavLink
-            to="/testSeries"
-            className={({ isActive }) =>
-              `px-3 py-2 rounded ${
-                isActive
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-800 hover:bg-gray-200"
-              }`
-            }
-          >
-            Test Series
-          </NavLink>
-          <NavLink
-            to="/about"
-            className={({ isActive }) =>
-              `px-3 py-2 rounded ${
-                isActive
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-800 hover:bg-gray-200"
-              }`
-            }
-          >
-            About
-          </NavLink>
+          <NavLink to="/testSeries" className="px-3 py-2 rounded font-medium" style={navLinkStyle}>Test Series</NavLink>
+          <NavLink to="/about" className="px-3 py-2 rounded font-medium" style={navLinkStyle}>About</NavLink>
 
-          {/* Authentication buttons */}
           {isAuthenticated ? (
-            <div className="flex items-center space-x-1 sm:space-x-2">
+            <div className="flex items-center space-x-1">
               {isStudent && (
-                <NavLink
-                  to="/dashboard"
-                  className="flex items-center space-x-1 px-2 sm:px-3 py-2 rounded text-gray-800 hover:bg-gray-200 text-sm"
-                >
-                  <User size={14} className="sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Dashboard</span>
+                <NavLink to="/dashboard" className="flex items-center space-x-1 px-3 py-2 rounded text-sm" style={navLinkStyle}>
+                  <User size={14} /><span className="hidden sm:inline">Dashboard</span>
                 </NavLink>
               )}
               {isAdmin && (
-                <NavLink
-                  to="/admin"
-                  className="flex items-center space-x-1 px-2 sm:px-3 py-2 rounded text-gray-800 hover:bg-gray-200 text-sm"
-                >
-                  <User size={14} className="sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Admin</span>
+                <NavLink to="/admin" className="flex items-center space-x-1 px-3 py-2 rounded text-sm" style={navLinkStyle}>
+                  <User size={14} /><span className="hidden sm:inline">Admin</span>
                 </NavLink>
               )}
-              <button
-                onClick={logout}
-                className="flex items-center space-x-1 px-2 sm:px-3 py-2 rounded text-gray-800 hover:bg-gray-200 text-sm"
-              >
-                <LogOut size={14} className="sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Logout</span>
+              <button onClick={logout} className="flex items-center space-x-1 px-3 py-2 rounded text-sm" style={{ color: SECONDARY }}>
+                <LogOut size={14} /><span className="hidden sm:inline">Logout</span>
               </button>
             </div>
           ) : (
-            <button
-              onClick={() => setShowAuthModal(true)}
-              className="flex items-center space-x-1 px-2 sm:px-3 py-2 rounded text-gray-800 hover:bg-gray-200 text-sm"
-            >
-              <User size={14} className="sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Login</span>
+            <button onClick={() => setShowAuthModal(true)}
+              className="flex items-center space-x-1 px-3 py-2 rounded text-sm font-medium"
+              style={{ backgroundColor: SECONDARY, color: PRIMARY }}>
+              <User size={14} /><span>Login</span>
             </button>
           )}
         </div>
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="lg:hidden text-gray-800 p-1"
-        >
+
+        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="lg:hidden p-1" style={{ color: ACCENT }}>
           <Menu size={24} />
         </button>
       </div>
 
-      {/* Mobile Dropdown */}
+      {/* Mobile menu */}
       {isMobileMenuOpen && (
         <div className="lg:hidden flex flex-col space-y-1 pb-3 px-2">
-          <button
-            onClick={() => {
-              navigate("/");
-              setIsMobileMenuOpen(false);
-            }}
-            className="w-full text-left px-4 py-2 rounded text-gray-800 hover:bg-gray-200"
-          >
-            Home
-          </button>
-          {/* Courses Mobile */}
+          <button onClick={() => { navigate("/"); setIsMobileMenuOpen(false); }}
+            className="w-full text-left px-4 py-2 rounded" style={{ color: ACCENT }}>Home</button>
           <div className="px-2">
-            <button
-              onClick={() => setIsCoursesDropdownOpen(!isCoursesDropdownOpen)}
-              className="flex items-center justify-between w-full px-2 py-2 text-gray-800 hover:bg-gray-200"
-            >
-              <span>Courses</span>
-              <ChevronDown size={16} />
+            <button onClick={() => setIsCoursesDropdownOpen(!isCoursesDropdownOpen)}
+              className="flex items-center justify-between w-full px-2 py-2" style={{ color: ACCENT }}>
+              <span>Courses</span><ChevronDown size={16} />
             </button>
-
             {isCoursesDropdownOpen && (
               <div className="flex flex-col pl-4 space-y-1">
-                <button
-                  onClick={() => {
-                    navigate("/courses");
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="w-full text-left px-2 py-1 text-gray-700 hover:bg-gray-100"
-                >
-                  All Courses
-                </button>
-                {loadingCourses ? (
-                  <div className="px-2 py-1 text-gray-500 text-sm">
-                    Loading...
-                  </div>
-                ) : (
-                  courses.map((course) => (
-                    <button
-                      key={course._id}
-                      onClick={() => {
-                        navigate(`/course/${course._id}`);
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className="w-full text-left px-2 py-1 text-gray-700 hover:bg-gray-100"
-                    >
-                      {course.title}
-                    </button>
-                  ))
-                )}
+                <button onClick={() => { navigate("/courses"); setIsMobileMenuOpen(false); }}
+                  className="w-full text-left px-2 py-1" style={{ color: SECONDARY }}>All Courses</button>
+                {courses.map((c) => (
+                  <button key={c._id} onClick={() => { navigate(`/course/${c._id}`); setIsMobileMenuOpen(false); }}
+                    className="w-full text-left px-2 py-1" style={{ color: SECONDARY }}>{c.title}</button>
+                ))}
               </div>
             )}
           </div>
-
-          <NavLink
-            to="/testSeries"
-            className={({ isActive }) =>
-              `px-3 py-2 rounded ${
-                isActive
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-800 hover:bg-gray-200"
-              }`
-            }
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            Test Series
-          </NavLink>
-          <NavLink
-            to="/about"
-            className={({ isActive }) =>
-              `px-3 py-2 rounded ${
-                isActive
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-800 hover:bg-gray-200"
-              }`
-            }
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            About
-          </NavLink>
-
-          {/* Mobile Authentication buttons */}
+          <NavLink to="/testSeries" className="px-3 py-2 rounded" style={{ color: SECONDARY }} onClick={() => setIsMobileMenuOpen(false)}>Test Series</NavLink>
+          <NavLink to="/about" className="px-3 py-2 rounded" style={{ color: SECONDARY }} onClick={() => setIsMobileMenuOpen(false)}>About</NavLink>
           {isAuthenticated ? (
             <div className="space-y-1">
               {isStudent && (
-                <NavLink
-                  to="/dashboard"
-                  className="flex items-center space-x-2 px-4 py-2 rounded text-gray-800 hover:bg-gray-200"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <User size={16} />
-                  <span>Dashboard</span>
+                <NavLink to="/dashboard" className="flex items-center space-x-2 px-4 py-2 rounded"
+                  style={{ color: SECONDARY }} onClick={() => setIsMobileMenuOpen(false)}>
+                  <User size={16} /><span>Dashboard</span>
                 </NavLink>
               )}
               {isAdmin && (
-                <NavLink
-                  to="/admin"
-                  className="flex items-center space-x-2 px-4 py-2 rounded text-gray-800 hover:bg-gray-200"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <User size={16} />
-                  <span>Admin</span>
+                <NavLink to="/admin" className="flex items-center space-x-2 px-4 py-2 rounded"
+                  style={{ color: SECONDARY }} onClick={() => setIsMobileMenuOpen(false)}>
+                  <User size={16} /><span>Admin</span>
                 </NavLink>
               )}
-              <button
-                onClick={() => {
-                  logout();
-                  setIsMobileMenuOpen(false);
-                }}
-                className="flex items-center space-x-2 px-4 py-2 rounded text-gray-800 hover:bg-gray-200 w-full text-left"
-              >
-                <LogOut size={16} />
-                <span>Logout</span>
+              <button onClick={() => { logout(); setIsMobileMenuOpen(false); }}
+                className="flex items-center space-x-2 px-4 py-2 rounded w-full text-left" style={{ color: SECONDARY }}>
+                <LogOut size={16} /><span>Logout</span>
               </button>
             </div>
           ) : (
-            <button
-              onClick={() => {
-                setShowAuthModal(true);
-                setIsMobileMenuOpen(false);
-              }}
-              className="flex items-center space-x-2 px-4 py-2 rounded text-gray-800 hover:bg-gray-200 w-full text-left"
-            >
-              <User size={16} />
-              <span>Login</span>
+            <button onClick={() => { setShowAuthModal(true); setIsMobileMenuOpen(false); }}
+              className="flex items-center space-x-2 px-4 py-2 rounded w-full text-left" style={{ color: SECONDARY }}>
+              <User size={16} /><span>Login</span>
             </button>
           )}
         </div>
       )}
     </nav>
   );
-  // const CardSlider = () => {
-  //   const n = sliderCards.length;
-  //   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % n);
-  //   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + n) % n);
 
-  //   const getVisibleCards = () => {
-  //     const cards = [];
-  //     for (let i = 0; i < 1; i++) {
-  //       const index = (currentSlide + i) % n;
-  //       cards.push(sliderCards[index]);
-  //     }
-  //     return cards;
-  //   };
-
-  //   return (
-  //     <div className="relative bg-white py-6 lg:py-12 ">
-  //       <div className="container mx-auto px-4">
-  //         <h2
-  //           className="text-2xl lg:text-3xl font-bold text-center mb-0 lg:mb-6"
-  //           style={{ color: "#163233" }}
-  //         >
-  //           Featured Programs
-  //         </h2>
-
-  //         <div className="relative max-w-4xl mx-auto flex items-center justify-center   ">
-  //           <button
-  //             onClick={prevSlide}
-  //             className="absolute left-2 lg:-left-12 top-1/2 transform -translate-y-1/2 z-10 p-2 rounded-full shadow-lg hover:shadow-xl transition-shadow"
-  //             style={{ backgroundColor: "#f9dc41" }}
-  //           >
-  //             <ChevronLeft size={20} className="lg:w-6 lg:h-6" />
-  //           </button>
-
-  //           <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mx-12 lg:mx-0">
-  //             {getVisibleCards().map((card) => (
-  //               <div
-  //                 key={card.id}
-  //                 className={`text-white p-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300`}
-  //                 onClick={() => {
-  //                   navigate(`${card.routing_link}`);
-  //                 }}
-  //               >
-  //                 <img
-  //                   src={card.img_link}
-  //                   alt="Course card"
-  //                   height={300}
-  //                   width={480}
-  //                 />
-  //               </div>
-  //             ))}
-  //           </div>
-
-  //           <button
-  //             onClick={nextSlide}
-  //             className="absolute right-2 lg:-right-12 top-1/2 transform -translate-y-1/2 z-10 p-2 rounded-full shadow-lg hover:shadow-xl transition-shadow"
-  //             style={{ backgroundColor: "#f9dc41" }}
-  //           >
-  //             <ChevronRight size={20} className="lg:w-6 lg:h-6" />
-  //           </button>
-  //         </div>
-
-  //         <div className="flex justify-center mt-6 space-x-2">
-  //           {Array.from({ length: 1 }, (_, index) => (
-  //             <button
-  //               key={index}
-  //               onClick={() => setCurrentSlide(index)}
-  //               className={`w-3 h-3 rounded-full transition-colors ${
-  //                 currentSlide === index ? "bg-yellow-400" : "bg-gray-300"
-  //               }`}
-  //             />
-  //           ))}
-  //         </div>
-  //       </div>
-  //     </div>
-  //   );
-  // };
   const CourseCards = () => {
-    // Use real courses from database, fallback to static if loading or empty
     const displayCourses = courses.slice(0, 6);
-    const isFromDB = courses.length > 0;
 
     if (loadingCourses && courses.length === 0) {
       return (
-        <div className="py-16" style={{ backgroundColor: "#fafaee" }}>
-          <div className="container mx-auto px-4">
-            <h2
-              className="text-3xl font-bold text-center mb-12"
-              style={{ color: "#163233" }}
-            >
-              Our Courses
-            </h2>
+        <div className="py-16" style={{ backgroundColor: ACCENT }}>
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-3xl font-bold mb-12" style={{ color: PRIMARY }}>Our Courses</h2>
             <div className="flex justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: PRIMARY }}></div>
             </div>
           </div>
         </div>
@@ -444,89 +201,26 @@ const AppContent = () => {
     }
 
     return (
-      <div className="py-16" style={{ backgroundColor: "#fafaee" }}>
+      <div className="py-16" style={{ backgroundColor: ACCENT }}>
         <div className="container mx-auto px-4">
-          <h2
-            className="text-3xl font-bold text-center mb-12"
-            style={{ color: "#163233" }}
-          >
-            Our Courses
-          </h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {displayCourses.map((course) => {
-              // Handle both DB courses and static courseCards
-              if (isFromDB) {
-                const categoryColors = {
-                  gpsc: "bg-purple-100",
-                  upsc: "bg-red-100",
-                  ssc: "bg-blue-100",
-                  neet11: "bg-green-100",
-                  neet12: "bg-teal-100",
-                  talati: "bg-orange-100",
-                  ethics: "bg-indigo-100",
-                };
-                const courseColor =
-                  categoryColors[course.category] || "bg-gray-100";
-
-                return (
-                  <div
-                    key={course._id}
-                    onClick={() => navigate(`/course/${course._id}`)}
-                    className={`${courseColor} p-6 rounded-xl shadow-lg hover:shadow-xl cursor-pointer transform hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-yellow-400`}
-                  >
-                    <h3
-                      className="text-xl font-bold mb-3"
-                      style={{ color: "#163233" }}
-                    >
-                      {course.title}
-                    </h3>
-                    <p className="text-gray-700 mb-4 line-clamp-3">
-                      {course.description}
-                    </p>
-                    <div className="flex items-center justify-between mb-4">
-                      <span
-                        className="text-lg font-semibold"
-                        style={{ color: "#163233" }}
-                      >
-                        ₹{course.price.toLocaleString()}
-                      </span>
-                      <span className="text-sm text-gray-600">
-                        {course.duration}
-                      </span>
-                    </div>
-                    <button
-                      className="px-4 py-2 rounded-lg font-medium transition-colors hover:shadow-md w-full"
-                      style={{ backgroundColor: "#f9dc41", color: "#163233" }}
-                    >
-                      Explore Course
-                    </button>
-                  </div>
-                );
-              } else {
-                // Static fallback
-                return (
-                  <div
-                    key={course.id}
-                    onClick={() => navigate(course.route)}
-                    className={`${course.color} p-6 rounded-xl shadow-lg hover:shadow-xl cursor-pointer transform hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-yellow-400`}
-                  >
-                    <h3
-                      className="text-xl font-bold mb-3"
-                      style={{ color: "#163233" }}
-                    >
-                      {course.title}
-                    </h3>
-                    <p className="text-gray-700 mb-4">{course.description}</p>
-                    <button
-                      className="px-4 py-2 rounded-lg font-medium transition-colors hover:shadow-md"
-                      style={{ backgroundColor: "#f9dc41", color: "#163233" }}
-                    >
-                      Explore Course
-                    </button>
-                  </div>
-                );
-              }
-            })}
+          <h2 className="text-3xl font-bold text-center mb-12" style={{ color: PRIMARY }}>Our Courses</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {displayCourses.map((course) => (
+              <div key={course._id}
+                onClick={() => navigate(`/course/${course._id}`)}
+                className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl cursor-pointer transform hover:scale-105 transition-all duration-300 border"
+                style={{ borderColor: SECONDARY }}>
+                <h3 className="text-xl font-bold mb-3" style={{ color: PRIMARY }}>{course.title}</h3>
+                <p className="mb-4 line-clamp-3 text-sm" style={{ color: PRIMARY, opacity: 0.75 }}>{course.description}</p>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-lg font-semibold" style={{ color: PRIMARY }}>₹{course.price.toLocaleString()}</span>
+                  <span className="text-sm" style={{ color: SECONDARY }}>{course.duration}</span>
+                </div>
+                <button className="px-4 py-2 rounded-lg font-medium w-full text-white" style={{ backgroundColor: PRIMARY }}>
+                  Explore Course
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -535,25 +229,6 @@ const AppContent = () => {
 
   const HomePage = () => (
     <div className="pt-40 sm:pt-36 md:pt-32 lg:pt-28">
-      {
-        // <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-        //   <div className="relative bg-white rounded-lg shadow-lg p-0 max-w-md w-full">
-        //     {/* Close Button */}
-        //     <button
-        //       className="absolute top-2 right-2 text-white bg-red-500 rounded-full w-8 h-8 text-center text-xl"
-        //       onClick={closeAd}
-        //     >
-        //       &times;
-        //     </button>
-        //     {/* Ad Image */}
-        //     <img
-        //       src="/Advertisement.jpg" // Replace with your path
-        //       alt="Advertisement"
-        //       className="w-full rounded-b-lg object-contain"
-        //     />
-        //   </div>
-        // </div>
-      }
       <CardSlider />
       <CourseCards />
     </div>
@@ -561,8 +236,7 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen">
-      <HomeAdOverlay />
-      <Header />
+<Header />
       <Navigation />
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -581,127 +255,37 @@ const AppContent = () => {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/shipping" element={<ShippingPolicy />} />
         <Route path="/reports" element={<ReportsPage />} />
-
-        {/* Course routes */}
         <Route path="/courses" element={<CourseList />} />
         <Route path="/course/:courseId" element={<CourseDetail />} />
-        <Route
-          path="/course/:courseId/video/:videoId"
-          element={
-            <ProtectedRoute>
-              <VideoPlayer />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/course/:courseId/videos"
-          element={
-            <ProtectedRoute>
-              <CourseContent />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/course/:courseId/materials"
-          element={
-            <ProtectedRoute>
-              <CourseMaterials />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* New authenticated routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute requireStudent={true}>
-              <StudentDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute requireAdmin={true}>
-              <AdminLayout>
-                <AdminDashboard />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/approvals"
-          element={
-            <ProtectedRoute requireAdmin={true}>
-              <AdminLayout>
-                <AdminUpiApprovals />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/courses"
-          element={
-            <ProtectedRoute requireAdmin={true}>
-              <AdminLayout>
-                <AdminCoursePage />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/courses/new"
-          element={
-            <ProtectedRoute requireAdmin={true}>
-              <AdminLayout>
-                <CreateCoursePage />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/test-series"
-          element={
-            <ProtectedRoute requireAdmin={true}>
-              <AdminLayout>
-                <AdminTestSeriesManagement />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/students"
-          element={
-            <ProtectedRoute requireAdmin={true}>
-              <AdminLayout>
-                <AdminStudentsPage />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/course/:courseId/video/:videoId" element={<ProtectedRoute><VideoPlayer /></ProtectedRoute>} />
+        <Route path="/course/:courseId/videos" element={<ProtectedRoute><CourseContent /></ProtectedRoute>} />
+        <Route path="/course/:courseId/materials" element={<ProtectedRoute><CourseMaterials /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute requireStudent={true}><StudentDashboard /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminLayout><AdminDashboard /></AdminLayout></ProtectedRoute>} />
+        <Route path="/admin/approvals" element={<ProtectedRoute requireAdmin={true}><AdminLayout><AdminUpiApprovals /></AdminLayout></ProtectedRoute>} />
+        <Route path="/admin/courses" element={<ProtectedRoute requireAdmin={true}><AdminLayout><AdminCoursePage /></AdminLayout></ProtectedRoute>} />
+        <Route path="/admin/courses/new" element={<ProtectedRoute requireAdmin={true}><AdminLayout><CreateCoursePage /></AdminLayout></ProtectedRoute>} />
+        <Route path="/admin/test-series" element={<ProtectedRoute requireAdmin={true}><AdminLayout><AdminTestSeriesManagement /></AdminLayout></ProtectedRoute>} />
+        <Route path="/admin/students" element={<ProtectedRoute requireAdmin={true}><AdminLayout><AdminStudentsPage /></AdminLayout></ProtectedRoute>} />
       </Routes>
 
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-      />
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
 
-      <footer className="bg-gray-800 text-white py-4 text-center mt-8">
-        <a href="/privacyPolicy">Privacy Policy</a> |
-        <a href="/termsAndCondition">Terms & Conditions</a> |
-        <a href="/refundPolicy">Refund Policy</a>
+      <footer className="py-4 text-center mt-8" style={{ backgroundColor: PRIMARY }}>
+        <a href="/privacyPolicy" style={{ color: SECONDARY }}>Privacy Policy</a>
+        {" | "}
+        <a href="/termsAndCondition" style={{ color: SECONDARY }}>Terms & Conditions</a>
+        {" | "}
+        <a href="/refundPolicy" style={{ color: SECONDARY }}>Refund Policy</a>
       </footer>
     </div>
   );
 };
 
-const App = () => {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  );
-};
+const App = () => (
+  <AuthProvider>
+    <AppContent />
+  </AuthProvider>
+);
 
 export default App;
