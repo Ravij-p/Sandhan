@@ -11,6 +11,8 @@ const CreateCoursePage = () => {
     title: "",
     description: "",
     price: "",
+    onlinePrice: "",
+    offlinePrice: "",
     category: "gpsc",
     duration: "12 months",
     language: "english",
@@ -149,46 +151,87 @@ const CreateCoursePage = () => {
               />
             </div>
 
-            {/* Price and Category */}
+            {/* Price Fields - Updated to support both modes */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <DollarSign className="inline w-4 h-4 mr-1" />
+                Base Price (₹) * (Legacy - leave 0 if using mode-specific prices)
+              </label>
+              <input
+                type="number"
+                value={course.price}
+                onChange={(e) =>
+                  setCourse({ ...course, price: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="0"
+                min="0"
+              />
+            </div>
+
+            {/* Online and Offline Prices */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <DollarSign className="inline w-4 h-4 mr-1" />
-                  Price (₹) *
+                  Online Mode Price (₹)
                 </label>
                 <input
                   type="number"
-                  value={course.price}
+                  value={course.onlinePrice}
                   onChange={(e) =>
-                    setCourse({ ...course, price: e.target.value })
+                    setCourse({ ...course, onlinePrice: e.target.value })
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="0"
+                  placeholder="Leave empty if not available"
                   min="0"
-                  required
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Leave empty if online mode is not available
+                </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Tag className="inline w-4 h-4 mr-1" />
-                  Category *
+                  <DollarSign className="inline w-4 h-4 mr-1" />
+                  Offline Mode Price (₹)
                 </label>
-                <select
-                  value={course.category}
+                <input
+                  type="number"
+                  value={course.offlinePrice}
                   onChange={(e) =>
-                    setCourse({ ...course, category: e.target.value })
+                    setCourse({ ...course, offlinePrice: e.target.value })
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  {categories.map((cat) => (
-                    <option key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Leave empty if not available"
+                  min="0"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Leave empty if offline mode is not available
+                </p>
               </div>
+            </div>
+
+            {/* Category */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Tag className="inline w-4 h-4 mr-1" />
+                Category *
+              </label>
+              <select
+                value={course.category}
+                onChange={(e) =>
+                  setCourse({ ...course, category: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              >
+                {categories.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Duration */}
@@ -226,48 +269,26 @@ const CreateCoursePage = () => {
               </select>
             </div>
 
-            {/* Course Mode */}
+            {/* Course Mode - Removed, mode will be determined by which prices are set */}
+            
+            {/* Location - Show always but mark as optional */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Course Mode *
+                Location/Center Address (for offline mode)
               </label>
-              <select
-                value={course.courseMode}
+              <input
+                type="text"
+                value={course.location}
                 onChange={(e) =>
-                  setCourse({ ...course, courseMode: e.target.value })
+                  setCourse({ ...course, location: e.target.value })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="online">Online (Videos Available)</option>
-                <option value="offline">Offline (Classroom Only)</option>
-              </select>
+                placeholder="Enter center location/address"
+              />
               <p className="text-xs text-gray-500 mt-1">
-                Online courses have video content. Offline courses are classroom-based.
+                Required only if offline mode is available
               </p>
             </div>
-
-            {/* Location - Show only for offline courses */}
-            {course.courseMode === 'offline' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Location/Center Address *
-                </label>
-                <input
-                  type="text"
-                  value={course.location}
-                  onChange={(e) =>
-                    setCourse({ ...course, location: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter center location/address"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Specify where offline classes will be conducted
-                </p>
-              </div>
-            )}
 
             {/* Course Features */}
             <div>
@@ -331,11 +352,19 @@ const CreateCoursePage = () => {
                   <h4 className="font-semibold text-gray-900">
                     {course.title || "Course Title"}
                   </h4>
-                  <span className="text-sm font-medium text-blue-600">
-                    {course.price
-                      ? `₹${parseInt(course.price).toLocaleString()}`
-                      : "₹0"}
-                  </span>
+                  <div className="text-sm font-medium text-blue-600">
+                    {course.onlinePrice && course.offlinePrice ? (
+                      <span>₹{parseInt(course.onlinePrice).toLocaleString()} (Online) / ₹{parseInt(course.offlinePrice).toLocaleString()} (Offline)</span>
+                    ) : course.onlinePrice ? (
+                      <span>₹{parseInt(course.onlinePrice).toLocaleString()} (Online Only)</span>
+                    ) : course.offlinePrice ? (
+                      <span>₹{parseInt(course.offlinePrice).toLocaleString()} (Offline Only)</span>
+                    ) : course.price ? (
+                      <span>₹{parseInt(course.price).toLocaleString()}</span>
+                    ) : (
+                      <span>₹0</span>
+                    )}
+                  </div>
                 </div>
                 <p className="text-sm text-gray-600 mb-2">
                   {course.description || "Course description will appear here"}

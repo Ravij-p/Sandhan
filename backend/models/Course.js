@@ -16,6 +16,16 @@ const courseSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    onlinePrice: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+    offlinePrice: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
     category: {
       type: String,
       required: true,

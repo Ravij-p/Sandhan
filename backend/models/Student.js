@@ -53,6 +53,11 @@ const studentSchema = new mongoose.Schema(
         razorpayPaymentId: {
           type: String,
         },
+        courseMode: {
+          type: String,
+          enum: ["online", "offline"],
+          default: "online",
+        },
       },
     ],
     purchasedTestSeries: [

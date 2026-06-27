@@ -43,6 +43,7 @@ const CourseDetail = () => {
   const [error, setError] = useState("");
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [selectedMode, setSelectedMode] = useState(null); // 'online' or 'offline'
 
   // Form state
   const [name, setName] = useState("");
@@ -62,8 +63,24 @@ const CourseDetail = () => {
   const fetchCourse = useCallback(async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/courses/${courseId}`);
-      if (res.data.success) setCourse(res.data.course);
-      else setError("Course not found");
+      if (res.data.success) {
+        const fetchedCourse = res.data.course;
+        setCourse(fetchedCourse);
+        
+        // Auto-select mode if only one is available
+        if (fetchedCourse.onlinePrice && !fetchedCourse.offlinePrice) {
+          setSelectedMode('online');
+        } else if (fetchedCourse.offlinePrice && !fetchedCourse.onlinePrice) {
+          setSelectedMode('offline');
+        } else if (fetchedCourse.onlinePrice && fetchedCourse.offlinePrice) {
+          setSelectedMode('online'); // Default to online if both available
+        } else if (fetchedCourse.price) {
+          // Legacy price field
+          setSelectedMode('online');
+        }
+      } else {
+        setError("Course not found");
+      }
     } catch {
       setError("Failed to load course details");
     } finally {
@@ -118,6 +135,14 @@ const CourseDetail = () => {
     setFormError(""); setPayError("");
     setStep("form"); setPricing(null);
     setReceiptNumber(null); setReceiptCourse(null);
+    
+    // Auto-select mode if only one available
+    if (course.onlinePrice && !course.offlinePrice) {
+      setSelectedMode('online');
+    } else if (course.offlinePrice && !course.onlinePrice) {
+      setSelectedMode('offline');
+    }
+    
     setShowModal(true);
   };
 
@@ -127,8 +152,15 @@ const CourseDetail = () => {
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       return setFormError("Valid email is required");
     if (!/^\d{10}$/.test(mobile)) return setFormError("10-digit mobile number is required");
+    
+    // Check if mode is selected when both are available
+    if (course.onlinePrice && course.offlinePrice && !selectedMode) {
+      return setFormError("Please select a mode (Online or Offline)");
+    }
+    
     setFormError("");
-    if (course) setPricing(calcPricing(course.price));
+    const currentPrice = getCurrentPrice();
+    if (currentPrice && course) setPricing(calcPricing(currentPrice));
     setStep("paying");
   };
 
@@ -147,7 +179,7 @@ const CourseDetail = () => {
     try {
       await loadRazorpay();
       const orderRes = await axios.post(`${API_BASE_URL}/payments/public/course/create-order`, {
-        courseId, name, email, mobile,
+        courseId, name, email, mobile, selectedMode,
       });
       if (!orderRes.data.success) {
         setPayError(orderRes.data.error || "Failed to create order");
@@ -171,6 +203,7 @@ const CourseDetail = () => {
               razorpay_signature: rzpResponse.razorpay_signature,
               courseId: courseData.id,
               email, name, mobile,
+              selectedMode,
             });
             if (verifyRes.data.success) {
               setReceiptNumber(verifyRes.data.receiptNumber);
@@ -262,7 +295,13 @@ const CourseDetail = () => {
     </div>
   );
 
-  const pricingPreview = calcPricing(course.price);
+  const getCurrentPrice = () => {
+    if (selectedMode === 'online' && course.onlinePrice) return course.onlinePrice;
+    if (selectedMode === 'offline' && course.offlinePrice) return course.offlinePrice;
+    return course.price || 0;
+  };
+
+  const pricingPreview = calcPricing(getCurrentPrice());
 
   return (
     <div className="min-h-screen pt-40 sm:pt-36 md:pt-32 lg:pt-28" style={{ backgroundColor: ACCENT }}>
@@ -292,19 +331,116 @@ const CourseDetail = () => {
               <h2 className="text-2xl font-bold mb-3" style={{ color: PRIMARY }}>{course.title}</h2>
               <p className="mb-4" style={{ color: PRIMARY, opacity: 0.8 }}>{course.description}</p>
 
-              {/* Price display */}
+              {/* Mode Selection Toggle - Show only if both modes available */}
+              {course.onlinePrice && course.offlinePrice && (
+                <div className="rounded-lg p-4 mb-5" style={{ backgroundColor: "#f0f0f0" }}>
+                  <div className="text-sm mb-3 font-semibold" style={{ color: PRIMARY }}>Select Course Mode:</div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setSelectedMode('online')}
+                      className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
+                        selectedMode === 'online' ? 'ring-2' : ''
+                      }`}
+                      style={{
+                        backgroundColor: selectedMode === 'online' ? PRIMARY : 'white',
+                        color: selectedMode === 'online' ? 'white' : PRIMARY,
+                        border: `2px solid ${PRIMARY}`
+                      }}
+                    >
+                      Online
+                      <div className="text-sm mt-1">₹{course.onlinePrice.toLocaleString()}</div>
+                    </button>
+                    <button
+                      onClick={() => setSelectedMode('offline')}
+                      className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
+                        selectedMode === 'offline' ? 'ring-2' : ''
+                      }`}
+                      style={{
+                        backgroundColor: selectedMode === 'offline' ? PRIMARY : 'white',
+                        color: selectedMode === 'offline' ? 'white' : PRIMARY,
+                        border: `2px solid ${PRIMARY}`
+                      }}
+                    >
+                      Offline
+                      <div className="text-sm mt-1">₹{course.offlinePrice.toLocaleString()}</div>
+                    </button>
+                  </div>
+                  {selectedMode === 'offline' && course.location && (
+                    <div className="mt-3 text-sm" style={{ color: PRIMARY }}>
+                      <strong>Location:</strong> {course.location}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Price display - Transparent pricing */}
               <div className="rounded-lg p-4 mb-5" style={{ backgroundColor: ACCENT }}>
-                <div className="text-sm mb-2 font-medium" style={{ color: PRIMARY }}>Price Breakdown</div>
-                <div className="flex justify-between text-sm" style={{ color: PRIMARY }}>
-                  <span>Course Price</span><span>₹{course.price.toLocaleString()}</span>
+                <div className="text-sm mb-2 font-medium" style={{ color: PRIMARY }}>
+                  {course.onlinePrice && course.offlinePrice ? (
+                    selectedMode ? `${selectedMode.charAt(0).toUpperCase() + selectedMode.slice(1)} Mode - Price Breakdown` : "Price Breakdown"
+                  ) : course.onlinePrice ? (
+                    "Online Mode - Price Breakdown"
+                  ) : course.offlinePrice ? (
+                    "Offline Mode - Price Breakdown"
+                  ) : (
+                    "Price Breakdown"
+                  )}
                 </div>
-                <div className="flex justify-between text-sm" style={{ color: PRIMARY }}>
-                  <span>Razorpay Charges (2% + 18% GST)</span>
-                  <span>₹{pricingPreview.gatewayCharge.toLocaleString()}</span>
-                </div>
-                <div className="border-t mt-2 pt-2 flex justify-between font-bold" style={{ color: PRIMARY, borderColor: SECONDARY }}>
-                  <span>Grand Total</span><span>₹{pricingPreview.totalAmount.toLocaleString()}</span>
-                </div>
+                {course.onlinePrice && course.offlinePrice && !selectedMode ? (
+                  // Show both prices when both available and none selected
+                  <>
+                    <div className="mb-3 pb-3 border-b" style={{ borderColor: SECONDARY }}>
+                      <div className="font-semibold mb-2" style={{ color: PRIMARY }}>Online Mode:</div>
+                      <div className="flex justify-between text-sm" style={{ color: PRIMARY }}>
+                        <span>Course Price</span><span>₹{course.onlinePrice.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm" style={{ color: PRIMARY }}>
+                        <span>Razorpay Charges (2% + 18% GST)</span>
+                        <span>₹{calcPricing(course.onlinePrice).gatewayCharge.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between font-semibold text-sm mt-1" style={{ color: PRIMARY }}>
+                        <span>Total</span><span>₹{calcPricing(course.onlinePrice).totalAmount.toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-semibold mb-2" style={{ color: PRIMARY }}>Offline Mode:</div>
+                      <div className="flex justify-between text-sm" style={{ color: PRIMARY }}>
+                        <span>Course Price</span><span>₹{course.offlinePrice.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm" style={{ color: PRIMARY }}>
+                        <span>Razorpay Charges (2% + 18% GST)</span>
+                        <span>₹{calcPricing(course.offlinePrice).gatewayCharge.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between font-semibold text-sm mt-1" style={{ color: PRIMARY }}>
+                        <span>Total</span><span>₹{calcPricing(course.offlinePrice).totalAmount.toLocaleString()}</span>
+                      </div>
+                    </div>
+                    {course.location && (
+                      <div className="mt-3 pt-3 text-xs border-t" style={{ borderColor: SECONDARY, color: PRIMARY }}>
+                        <strong>Offline Location:</strong> {course.location}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  // Show selected mode price or single available price
+                  <>
+                    <div className="flex justify-between text-sm" style={{ color: PRIMARY }}>
+                      <span>Course Price</span><span>₹{getCurrentPrice().toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm" style={{ color: PRIMARY }}>
+                      <span>Razorpay Charges (2% + 18% GST)</span>
+                      <span>₹{pricingPreview.gatewayCharge.toLocaleString()}</span>
+                    </div>
+                    <div className="border-t mt-2 pt-2 flex justify-between font-bold" style={{ color: PRIMARY, borderColor: SECONDARY }}>
+                      <span>Grand Total</span><span>₹{pricingPreview.totalAmount.toLocaleString()}</span>
+                    </div>
+                    {selectedMode === 'offline' && course.location && (
+                      <div className="mt-3 pt-3 text-xs border-t" style={{ borderColor: SECONDARY, color: PRIMARY }}>
+                        <strong>Location:</strong> {course.location}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               {course.features?.length > 0 && (
@@ -344,12 +480,24 @@ const CourseDetail = () => {
                   <Play className="w-5 h-5 mr-2" /> Start Learning
                 </button>
               ) : (
-                <button onClick={openModal}
-                  className="flex items-center justify-center w-full py-3 px-6 rounded-lg font-semibold"
-                  style={{ backgroundColor: SECONDARY, color: PRIMARY }}>
-                  <BookOpen className="w-5 h-5 mr-2" />
-                  Register Now — ₹{pricingPreview.totalAmount.toLocaleString()} Total
-                </button>
+                <>
+                  {course.onlinePrice || course.offlinePrice || course.price ? (
+                    <button onClick={openModal}
+                      className="flex items-center justify-center w-full py-3 px-6 rounded-lg font-semibold"
+                      style={{ backgroundColor: SECONDARY, color: PRIMARY }}>
+                      <BookOpen className="w-5 h-5 mr-2" />
+                      {course.onlinePrice && course.offlinePrice ? (
+                        selectedMode ? `Register Now — ₹${pricingPreview.totalAmount.toLocaleString()} Total` : "Register Now — Select Mode"
+                      ) : (
+                        `Register Now — ₹${pricingPreview.totalAmount.toLocaleString()} Total`
+                      )}
+                    </button>
+                  ) : (
+                    <div className="text-center py-3 text-sm" style={{ color: SECONDARY }}>
+                      Pricing information not available
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -382,8 +530,34 @@ const CourseDetail = () => {
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold mb-4" style={{ color: PRIMARY }}>Course Info</h3>
               <div className="space-y-2">
+                {course.onlinePrice && course.offlinePrice ? (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span style={{ color: SECONDARY }}>Online Price</span>
+                      <span className="font-medium" style={{ color: PRIMARY }}>₹{course.onlinePrice.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span style={{ color: SECONDARY }}>Offline Price</span>
+                      <span className="font-medium" style={{ color: PRIMARY }}>₹{course.offlinePrice.toLocaleString()}</span>
+                    </div>
+                  </>
+                ) : course.onlinePrice ? (
+                  <div className="flex justify-between text-sm">
+                    <span style={{ color: SECONDARY }}>Price (Online)</span>
+                    <span className="font-medium" style={{ color: PRIMARY }}>₹{course.onlinePrice.toLocaleString()}</span>
+                  </div>
+                ) : course.offlinePrice ? (
+                  <div className="flex justify-between text-sm">
+                    <span style={{ color: SECONDARY }}>Price (Offline)</span>
+                    <span className="font-medium" style={{ color: PRIMARY }}>₹{course.offlinePrice.toLocaleString()}</span>
+                  </div>
+                ) : course.price ? (
+                  <div className="flex justify-between text-sm">
+                    <span style={{ color: SECONDARY }}>Price</span>
+                    <span className="font-medium" style={{ color: PRIMARY }}>₹{course.price.toLocaleString()}</span>
+                  </div>
+                ) : null}
                 {[
-                  ["Price", `₹${course.price.toLocaleString()}`],
                   ["Duration", course.duration],
                   ["Videos", videos.length],
                   ["Language", course.language],
@@ -456,6 +630,49 @@ const CourseDetail = () => {
               {/* STEP: Form */}
               {step === "form" && (
                 <form onSubmit={handleFormSubmit} className="space-y-3">
+                  {/* Mode Selection - Show only if both modes available */}
+                  {course.onlinePrice && course.offlinePrice && (
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-2" style={{ color: PRIMARY }}>Select Mode *</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedMode('online')}
+                          className={`py-3 px-4 rounded-lg font-medium text-sm transition-all ${
+                            selectedMode === 'online' ? 'ring-2' : ''
+                          }`}
+                          style={{
+                            backgroundColor: selectedMode === 'online' ? PRIMARY : 'white',
+                            color: selectedMode === 'online' ? 'white' : PRIMARY,
+                            border: `2px solid ${PRIMARY}`
+                          }}
+                        >
+                          Online
+                          <div className="text-xs mt-1">₹{course.onlinePrice.toLocaleString()}</div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedMode('offline')}
+                          className={`py-3 px-4 rounded-lg font-medium text-sm transition-all ${
+                            selectedMode === 'offline' ? 'ring-2' : ''
+                          }`}
+                          style={{
+                            backgroundColor: selectedMode === 'offline' ? PRIMARY : 'white',
+                            color: selectedMode === 'offline' ? 'white' : PRIMARY,
+                            border: `2px solid ${PRIMARY}`
+                          }}
+                        >
+                          Offline
+                          <div className="text-xs mt-1">₹{course.offlinePrice.toLocaleString()}</div>
+                        </button>
+                      </div>
+                      {selectedMode === 'offline' && course.location && (
+                        <div className="mt-2 text-xs" style={{ color: PRIMARY }}>
+                          <strong>Location:</strong> {course.location}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <input
                     value={name} onChange={(e) => setName(e.target.value)}
                     placeholder="Full Name *"

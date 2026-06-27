@@ -316,6 +316,8 @@ router.post("/", verifyToken, requireAdmin, async (req, res) => {
       title,
       description,
       price,
+      onlinePrice,
+      offlinePrice,
       category,
       duration,
       features,
@@ -328,10 +330,24 @@ router.post("/", verifyToken, requireAdmin, async (req, res) => {
     } = req.body;
 
     // Validation
-    if (!title || !description || !price || !category) {
+    if (!title || !description || !category) {
       console.log("Validation failed - missing required fields");
       return res.status(400).json({
-        error: "Title, description, price, and category are required",
+        error: "Title, description, and category are required",
+      });
+    }
+
+    // At least one price must be provided
+    if (!price && !onlinePrice && !offlinePrice) {
+      return res.status(400).json({
+        error: "At least one price (price, onlinePrice, or offlinePrice) must be provided",
+      });
+    }
+
+    // Validate offline price requires location
+    if (offlinePrice && !location) {
+      return res.status(400).json({
+        error: "Location is required when offline price is set",
       });
     }
 
@@ -343,27 +359,18 @@ router.post("/", verifyToken, requireAdmin, async (req, res) => {
       "online"
     ).toLowerCase();
     console.log("Resolved course mode (create):", resolvedMode);
-    if (!["online", "offline"].includes(resolvedMode)) {
-      return res
-        .status(400)
-        .json({ error: "course mode must be 'online' or 'offline'" });
-    }
-
-    if (resolvedMode === "offline" && !location) {
-      return res
-        .status(400)
-        .json({ error: "location is required for offline courses" });
-    }
 
     const course = new Course({
       title,
       description,
-      price,
+      price: price || 0,
+      onlinePrice: onlinePrice || null,
+      offlinePrice: offlinePrice || null,
       category,
       duration: duration || "12 months",
       language: language || "english",
       courseMode: resolvedMode,
-      location: resolvedMode === "offline" ? location || "" : "",
+      location: location || "",
       features: features || [],
       createdBy: req.user._id,
     });
@@ -391,6 +398,8 @@ router.put("/:id", verifyToken, requireAdmin, async (req, res) => {
       title,
       description,
       price,
+      onlinePrice,
+      offlinePrice,
       category,
       duration,
       language,
@@ -412,29 +421,28 @@ router.put("/:id", verifyToken, requireAdmin, async (req, res) => {
     if (title) course.title = title;
     if (description) course.description = description;
     if (price !== undefined) course.price = price;
+    if (onlinePrice !== undefined) course.onlinePrice = onlinePrice || null;
+    if (offlinePrice !== undefined) course.offlinePrice = offlinePrice || null;
     if (category) course.category = category;
     if (duration) course.duration = duration;
     if (features) course.features = features;
     if (language) course.language = language;
+    if (location !== undefined) course.location = location;
+    if (isActive !== undefined) course.isActive = isActive;
+    
     const incomingMode = courseMode || deliveryMode || mode || courseType;
     if (incomingMode) {
       const normalizedMode = String(incomingMode).toLowerCase();
       console.log("Resolved course mode (update):", normalizedMode);
-      if (!["online", "offline"].includes(normalizedMode)) {
-        return res
-          .status(400)
-          .json({ error: "course mode must be 'online' or 'offline'" });
-      }
-      if (normalizedMode === "offline" && !location && !course.location) {
-        return res
-          .status(400)
-          .json({ error: "location is required for offline courses" });
-      }
       course.courseMode = normalizedMode;
-      if (normalizedMode === "online") course.location = "";
     }
-    if (location !== undefined) course.location = location;
-    if (isActive !== undefined) course.isActive = isActive;
+    
+    // Validate offline price requires location
+    if (course.offlinePrice && !course.location) {
+      return res.status(400).json({
+        error: "Location is required when offline price is set",
+      });
+    }
 
     await course.save();
 

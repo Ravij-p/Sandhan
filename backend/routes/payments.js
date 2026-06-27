@@ -123,7 +123,7 @@ router.get("/receipt/:receiptNumber", async (req, res) => {
 
 router.post("/public/course/create-order", async (req, res) => {
   try {
-    const { courseId, name, email, mobile } = req.body;
+    const { courseId, name, email, mobile, selectedMode } = req.body;
     if (!courseId || !name || !email || !mobile) {
       return res.status(400).json({ error: "courseId, name, email and mobile are required" });
     }
@@ -131,8 +131,20 @@ router.post("/public/course/create-order", async (req, res) => {
     const course = await Course.findById(courseId);
     if (!course || !course.isActive) return res.status(404).json({ error: "Course not found" });
 
+    // Determine price based on selectedMode
+    let coursePrice;
+    if (selectedMode === 'online' && course.onlinePrice) {
+      coursePrice = course.onlinePrice;
+    } else if (selectedMode === 'offline' && course.offlinePrice) {
+      coursePrice = course.offlinePrice;
+    } else if (course.price) {
+      coursePrice = course.price; // Fallback to legacy price
+    } else {
+      return res.status(400).json({ error: "No valid price found for the selected mode" });
+    }
+
     const student = await getOrCreateStudentByEmail({ name, email, mobile });
-    const { baseAmount, gatewayCharge, totalAmount } = calcPricing(course.price);
+    const { baseAmount, gatewayCharge, totalAmount } = calcPricing(coursePrice);
 
     const order = await razorpay.orders.create({
       amount: totalAmount * 100,
@@ -144,6 +156,7 @@ router.post("/public/course/create-order", async (req, res) => {
         studentName: student.name,
         courseName: course.title,
         mobile: student.mobile,
+        selectedMode: selectedMode || 'online',
       },
     });
 
@@ -155,7 +168,8 @@ router.post("/public/course/create-order", async (req, res) => {
       currency: order.currency,
       key: process.env.RAZORPAY_KEY_ID,
       breakdown: { baseAmount, gatewayCharge, totalAmount },
-      course: { id: course._id, title: course.title, price: course.price },
+      course: { id: course._id, title: course.title, price: coursePrice },
+      selectedMode: selectedMode || 'online',
     });
   } catch (error) {
     console.error("Public create course order error:", error);
@@ -167,7 +181,7 @@ router.post("/public/course/create-order", async (req, res) => {
 
 router.post("/public/course/verify-payment", async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, courseId, email, name, mobile } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, courseId, email, name, mobile, selectedMode } = req.body;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !courseId || !email) {
       return res.status(400).json({ error: "Invalid payment data" });
@@ -185,6 +199,18 @@ router.post("/public/course/verify-payment", async (req, res) => {
     const course = await Course.findById(courseId);
     if (!course) return res.status(404).json({ error: "Course not found" });
 
+    // Determine price based on selectedMode
+    let coursePrice;
+    if (selectedMode === 'online' && course.onlinePrice) {
+      coursePrice = course.onlinePrice;
+    } else if (selectedMode === 'offline' && course.offlinePrice) {
+      coursePrice = course.offlinePrice;
+    } else if (course.price) {
+      coursePrice = course.price;
+    } else {
+      return res.status(400).json({ error: "No valid price found" });
+    }
+
     const student = await getOrCreateStudentByEmail({ name: name || "", email, mobile });
 
     const isAlreadyEnrolled = student.enrolledCourses.some(
@@ -195,16 +221,17 @@ router.post("/public/course/verify-payment", async (req, res) => {
     }
 
     const receiptNumber = makeReceiptNumber("SDN");
-    const { baseAmount, gatewayCharge, totalAmount } = calcPricing(course.price);
+    const { baseAmount, gatewayCharge, totalAmount } = calcPricing(coursePrice);
 
     student.enrolledCourses.push({
       course: courseId,
       enrolledAt: new Date(),
       paymentStatus: "paid",
       receiptNumber,
-      amount: course.price,
+      amount: coursePrice,
       razorpayOrderId: razorpay_order_id,
       razorpayPaymentId: razorpay_payment_id,
+      courseMode: selectedMode || 'online',
     });
     await student.save();
 
@@ -213,7 +240,7 @@ router.post("/public/course/verify-payment", async (req, res) => {
       name: student.name,
       mobile: student.mobile,
       course: course.title,
-      amount: course.price,
+      amount: coursePrice,
       receiptNumber,
       paymentDate: new Date(),
       paymentStatus: "paid",
@@ -235,6 +262,7 @@ router.post("/public/course/verify-payment", async (req, res) => {
       studentName: student.name,
       studentEmail: student.email,
       studentMobile: student.mobile,
+      selectedMode: selectedMode || 'online',
     });
   } catch (error) {
     console.error("Public course payment verification error:", error);
