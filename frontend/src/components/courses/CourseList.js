@@ -77,10 +77,18 @@ const CourseList = () => {
                       <BookOpen className="w-14 h-14 opacity-40 text-white" />
                     </div>
                   )}
-                  <div className="absolute top-3 right-3 rounded-full px-3 py-1 text-sm font-semibold"
-                    style={{ backgroundColor: SECONDARY, color: PRIMARY }}>
-                    ₹{course.price.toLocaleString()}
-                  </div>
+                  {(course.onlinePrice > 0 || course.offlinePrice > 0) && (
+                    <div className="absolute top-3 right-3 rounded-full px-3 py-1 text-sm font-semibold"
+                      style={{ backgroundColor: SECONDARY, color: PRIMARY }}>
+                      {course.onlinePrice > 0 && course.offlinePrice > 0 ? (
+                        <span>₹{course.onlinePrice.toLocaleString()} / ₹{course.offlinePrice.toLocaleString()}</span>
+                      ) : course.onlinePrice > 0 ? (
+                        <span>₹{course.onlinePrice.toLocaleString()}</span>
+                      ) : (
+                        <span>₹{course.offlinePrice.toLocaleString()}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-5">

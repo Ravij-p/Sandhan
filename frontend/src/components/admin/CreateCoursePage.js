@@ -10,7 +10,6 @@ const CreateCoursePage = () => {
   const [course, setCourse] = useState({
     title: "",
     description: "",
-    price: "",
     onlinePrice: "",
     offlinePrice: "",
     category: "gpsc",
@@ -151,25 +150,7 @@ const CreateCoursePage = () => {
               />
             </div>
 
-            {/* Price Fields - Updated to support both modes */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <DollarSign className="inline w-4 h-4 mr-1" />
-                Base Price (₹) * (Legacy - leave 0 if using mode-specific prices)
-              </label>
-              <input
-                type="number"
-                value={course.price}
-                onChange={(e) =>
-                  setCourse({ ...course, price: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0"
-                min="0"
-              />
-            </div>
-
-            {/* Online and Offline Prices */}
+            {/* Price Fields - Online and Offline only */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -354,15 +335,13 @@ const CreateCoursePage = () => {
                   </h4>
                   <div className="text-sm font-medium text-blue-600">
                     {course.onlinePrice && course.offlinePrice ? (
-                      <span>₹{parseInt(course.onlinePrice).toLocaleString()} (Online) / ₹{parseInt(course.offlinePrice).toLocaleString()} (Offline)</span>
+                      <span>₹{parseInt(course.onlinePrice).toLocaleString()} / ₹{parseInt(course.offlinePrice).toLocaleString()}</span>
                     ) : course.onlinePrice ? (
-                      <span>₹{parseInt(course.onlinePrice).toLocaleString()} (Online Only)</span>
+                      <span>₹{parseInt(course.onlinePrice).toLocaleString()}</span>
                     ) : course.offlinePrice ? (
-                      <span>₹{parseInt(course.offlinePrice).toLocaleString()} (Offline Only)</span>
-                    ) : course.price ? (
-                      <span>₹{parseInt(course.price).toLocaleString()}</span>
+                      <span>₹{parseInt(course.offlinePrice).toLocaleString()}</span>
                     ) : (
-                      <span>₹0</span>
+                      <span className="text-gray-400">Price not set</span>
                     )}
                   </div>
                 </div>

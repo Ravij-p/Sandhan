@@ -63,7 +63,9 @@ const AdminCoursePage = () => {
   const [editForm, setEditForm] = useState({
     title: "",
     description: "",
-    price: "",
+    onlinePrice: "",
+    offlinePrice: "",
+    location: "",
     category: "gpsc",
     duration: "",
     features: [],
@@ -262,7 +264,9 @@ const AdminCoursePage = () => {
     setEditForm({
       title: course.title,
       description: course.description,
-      price: course.price.toString(),
+      onlinePrice: course.onlinePrice ? course.onlinePrice.toString() : "",
+      offlinePrice: course.offlinePrice ? course.offlinePrice.toString() : "",
+      location: course.location || "",
       category: course.category,
       duration: course.duration || "",
       features: course.features || [],
@@ -281,7 +285,8 @@ const AdminCoursePage = () => {
         `${API_BASE_URL}/courses/${editingCourse._id}`,
         {
           ...editForm,
-          price: parseFloat(editForm.price),
+          onlinePrice: editForm.onlinePrice ? parseFloat(editForm.onlinePrice) : null,
+          offlinePrice: editForm.offlinePrice ? parseFloat(editForm.offlinePrice) : null,
         },
         {
           headers: {
@@ -454,8 +459,8 @@ const AdminCoursePage = () => {
           bValue = b.title.toLowerCase();
           break;
         case "price":
-          aValue = a.price;
-          bValue = b.price;
+          aValue = a.onlinePrice || a.offlinePrice || 0;
+          bValue = b.onlinePrice || b.offlinePrice || 0;
           break;
         case "videoCount":
           aValue = a.videoCount || 0;
@@ -810,7 +815,15 @@ const AdminCoursePage = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ₹{course.price.toLocaleString()}
+                        {course.onlinePrice && course.offlinePrice ? (
+                          <span>₹{course.onlinePrice.toLocaleString()} / ₹{course.offlinePrice.toLocaleString()}</span>
+                        ) : course.onlinePrice ? (
+                          <span>₹{course.onlinePrice.toLocaleString()}</span>
+                        ) : course.offlinePrice ? (
+                          <span>₹{course.offlinePrice.toLocaleString()}</span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {course.videoCount || 0}
@@ -1378,10 +1391,7 @@ const AdminCoursePage = () => {
                   <textarea
                     value={editForm.description}
                     onChange={(e) =>
-                      setEditForm({
-                        ...editForm,
-                        description: e.target.value,
-                      })
+                      setEditForm({ ...editForm, description: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     rows="3"
@@ -1392,40 +1402,71 @@ const AdminCoursePage = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Price (₹) *
+                      Online Price (₹)
                     </label>
                     <input
                       type="number"
-                      value={editForm.price}
+                      value={editForm.onlinePrice}
                       onChange={(e) =>
-                        setEditForm({ ...editForm, price: e.target.value })
+                        setEditForm({ ...editForm, onlinePrice: e.target.value })
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
+                      placeholder="Leave empty if N/A"
+                      min="0"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Category *
+                      Offline Price (₹)
                     </label>
-                    <select
-                      value={editForm.category}
+                    <input
+                      type="number"
+                      value={editForm.offlinePrice}
                       onChange={(e) =>
-                        setEditForm({ ...editForm, category: e.target.value })
+                        setEditForm({ ...editForm, offlinePrice: e.target.value })
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="gpsc">GPSC</option>
-                      <option value="upsc">UPSC</option>
-                      <option value="ssc">SSC</option>
-                      <option value="neet11">NEET 11</option>
-                      <option value="neet12">NEET 12</option>
-                      <option value="talati">TALATI</option>
-                      <option value="ethics">ETHICS</option>
-                    </select>
+                      placeholder="Leave empty if N/A"
+                      min="0"
+                    />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Location (for offline)
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.location}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, location: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Required if offline price is set"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Category *
+                  </label>
+                  <select
+                    value={editForm.category}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, category: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="gpsc">GPSC</option>
+                    <option value="upsc">UPSC</option>
+                    <option value="ssc">SSC</option>
+                    <option value="neet11">NEET 11</option>
+                    <option value="neet12">NEET 12</option>
+                    <option value="talati">TALATI</option>
+                    <option value="ethics">ETHICS</option>
+                  </select>
                 </div>
 
                 <div>

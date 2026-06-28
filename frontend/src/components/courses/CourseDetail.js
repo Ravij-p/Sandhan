@@ -298,10 +298,17 @@ const CourseDetail = () => {
   const getCurrentPrice = () => {
     if (selectedMode === 'online' && course.onlinePrice) return course.onlinePrice;
     if (selectedMode === 'offline' && course.offlinePrice) return course.offlinePrice;
-    return course.price || 0;
+    if (course.onlinePrice) return course.onlinePrice;
+    if (course.offlinePrice) return course.offlinePrice;
+    return 0;
   };
 
-  const pricingPreview = calcPricing(getCurrentPrice());
+  const hasValidPrice = () => {
+    return (course.onlinePrice && course.onlinePrice > 0) ||
+           (course.offlinePrice && course.offlinePrice > 0);
+  };
+
+  const pricingPreview = hasValidPrice() ? calcPricing(getCurrentPrice()) : null;
 
   return (
     <div className="min-h-screen pt-40 sm:pt-36 md:pt-32 lg:pt-28" style={{ backgroundColor: ACCENT }}>
@@ -374,7 +381,8 @@ const CourseDetail = () => {
               )}
 
               {/* Price display - Transparent pricing */}
-              <div className="rounded-lg p-4 mb-5" style={{ backgroundColor: ACCENT }}>
+              {hasValidPrice() && (
+                <div className="rounded-lg p-4 mb-5" style={{ backgroundColor: ACCENT }}>
                 <div className="text-sm mb-2 font-medium" style={{ color: PRIMARY }}>
                   {course.onlinePrice && course.offlinePrice ? (
                     selectedMode ? `${selectedMode.charAt(0).toUpperCase() + selectedMode.slice(1)} Mode - Price Breakdown` : "Price Breakdown"
@@ -442,6 +450,7 @@ const CourseDetail = () => {
                   </>
                 )}
               </div>
+              )}
 
               {course.features?.length > 0 && (
                 <div className="mb-5">
@@ -479,25 +488,21 @@ const CourseDetail = () => {
                   style={{ backgroundColor: PRIMARY }}>
                   <Play className="w-5 h-5 mr-2" /> Start Learning
                 </button>
-              ) : (
-                <>
-                  {course.onlinePrice || course.offlinePrice || course.price ? (
-                    <button onClick={openModal}
-                      className="flex items-center justify-center w-full py-3 px-6 rounded-lg font-semibold"
-                      style={{ backgroundColor: SECONDARY, color: PRIMARY }}>
-                      <BookOpen className="w-5 h-5 mr-2" />
-                      {course.onlinePrice && course.offlinePrice ? (
-                        selectedMode ? `Register Now — ₹${pricingPreview.totalAmount.toLocaleString()} Total` : "Register Now — Select Mode"
-                      ) : (
-                        `Register Now — ₹${pricingPreview.totalAmount.toLocaleString()} Total`
-                      )}
-                    </button>
+              ) : hasValidPrice() ? (
+                <button onClick={openModal}
+                  className="flex items-center justify-center w-full py-3 px-6 rounded-lg font-semibold"
+                  style={{ backgroundColor: SECONDARY, color: PRIMARY }}>
+                  <BookOpen className="w-5 h-5 mr-2" />
+                  {course.onlinePrice && course.offlinePrice ? (
+                    selectedMode ? `Register Now — ₹${pricingPreview.totalAmount.toLocaleString()} Total` : "Register Now — Select Mode"
                   ) : (
-                    <div className="text-center py-3 text-sm" style={{ color: SECONDARY }}>
-                      Pricing information not available
-                    </div>
+                    `Register Now — ₹${pricingPreview.totalAmount.toLocaleString()} Total`
                   )}
-                </>
+                </button>
+              ) : (
+                <div className="text-center py-3 text-sm" style={{ color: SECONDARY }}>
+                  Pricing information not available
+                </div>
               )}
             </div>
 
@@ -550,11 +555,6 @@ const CourseDetail = () => {
                   <div className="flex justify-between text-sm">
                     <span style={{ color: SECONDARY }}>Price (Offline)</span>
                     <span className="font-medium" style={{ color: PRIMARY }}>₹{course.offlinePrice.toLocaleString()}</span>
-                  </div>
-                ) : course.price ? (
-                  <div className="flex justify-between text-sm">
-                    <span style={{ color: SECONDARY }}>Price</span>
-                    <span className="font-medium" style={{ color: PRIMARY }}>₹{course.price.toLocaleString()}</span>
                   </div>
                 ) : null}
                 {[

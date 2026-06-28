@@ -338,9 +338,9 @@ router.post("/", verifyToken, requireAdmin, async (req, res) => {
     }
 
     // At least one price must be provided
-    if (!price && !onlinePrice && !offlinePrice) {
+    if (!onlinePrice && !offlinePrice) {
       return res.status(400).json({
-        error: "At least one price (price, onlinePrice, or offlinePrice) must be provided",
+        error: "At least one price (onlinePrice or offlinePrice) must be provided",
       });
     }
 
@@ -363,7 +363,6 @@ router.post("/", verifyToken, requireAdmin, async (req, res) => {
     const course = new Course({
       title,
       description,
-      price: price || 0,
       onlinePrice: onlinePrice || null,
       offlinePrice: offlinePrice || null,
       category,
@@ -397,7 +396,6 @@ router.put("/:id", verifyToken, requireAdmin, async (req, res) => {
     const {
       title,
       description,
-      price,
       onlinePrice,
       offlinePrice,
       category,
@@ -420,7 +418,6 @@ router.put("/:id", verifyToken, requireAdmin, async (req, res) => {
     // Update fields
     if (title) course.title = title;
     if (description) course.description = description;
-    if (price !== undefined) course.price = price;
     if (onlinePrice !== undefined) course.onlinePrice = onlinePrice || null;
     if (offlinePrice !== undefined) course.offlinePrice = offlinePrice || null;
     if (category) course.category = category;

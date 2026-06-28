@@ -214,7 +214,15 @@ const AppContent = () => {
                 <h3 className="text-xl font-bold mb-3" style={{ color: PRIMARY }}>{course.title}</h3>
                 <p className="mb-4 line-clamp-3 text-sm" style={{ color: PRIMARY, opacity: 0.75 }}>{course.description}</p>
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-lg font-semibold" style={{ color: PRIMARY }}>₹{course.price.toLocaleString()}</span>
+                  <span className="text-lg font-semibold" style={{ color: PRIMARY }}>
+                    {course.onlinePrice && course.offlinePrice
+                      ? `₹${course.onlinePrice.toLocaleString()} / ₹${course.offlinePrice.toLocaleString()}`
+                      : course.onlinePrice
+                      ? `₹${course.onlinePrice.toLocaleString()}`
+                      : course.offlinePrice
+                      ? `₹${course.offlinePrice.toLocaleString()}`
+                      : null}
+                  </span>
                   <span className="text-sm" style={{ color: SECONDARY }}>{course.duration}</span>
                 </div>
                 <button className="px-4 py-2 rounded-lg font-medium w-full text-white" style={{ backgroundColor: PRIMARY }}>
