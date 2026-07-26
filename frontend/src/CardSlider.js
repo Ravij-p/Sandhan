@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const aboutImages = [
   "/about/1000147608.jpg",
@@ -27,22 +28,6 @@ const css = `
 @keyframes slideOut {
   from { transform: translateX(-50%); }
   to   { transform: translateX(calc(-50% - 110%)); }
-}
-.slider-dots button {
-  height: 5px;
-  border-radius: 3px;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  transition: width 0.3s;
-}
-@media (max-width: 640px) {
-  .slider-dots button {
-    height: 3px !important;
-    border-radius: 2px !important;
-  }
-  .slider-dots button.active { width: 8px !important; }
-  .slider-dots button.inactive { width: 3px !important; }
 }
 `;
 
@@ -119,18 +104,24 @@ const Panel = ({ images, interval }) => {
       />
 
       {images.length > 1 && (
-        <div className="slider-dots" style={{ position: "absolute", bottom: 6, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 4, zIndex: 3 }}>
+        <div style={{ position: "absolute", bottom: 8, left: 0, right: 0, display: "flex", justifyContent: "center", alignItems: "center", gap: 4, zIndex: 3 }}>
           {images.map((_, i) => (
             <button
               key={i}
-              className={i === cur ? "active" : "inactive"}
               onClick={() => { setPrev(cur); setCur(i); }}
               style={{
-                width: i === cur ? 12 : 5, height: 5,
-                borderRadius: 3, border: "none",
-                background: i === cur ? "#353841" : "rgba(53,56,65,0.35)",
-                cursor: "pointer", padding: 0,
-                transition: "width 0.3s",
+                display: "block",
+                width: 6, height: 6,
+                minWidth: 0, minHeight: 0,
+                borderRadius: "50%",
+                border: "none",
+                background: i === cur ? "#353841" : "rgba(53,56,65,0.3)",
+                cursor: "pointer",
+                padding: 0,
+                margin: 0,
+                flexShrink: 0,
+                outline: "none",
+                appearance: "none",
               }}
             />
           ))}
@@ -140,18 +131,24 @@ const Panel = ({ images, interval }) => {
   );
 };
 
-const CardSlider = () => (
-  <>
-    <style>{css}</style>
-    <div style={{ display: "flex", gap: "12px", width: "100%", height: "clamp(220px, 45vw, 480px)" }}>
-      <div style={{ width: "60%", height: "100%", flexShrink: 0, borderRadius: "12px", overflow: "hidden" }}>
-        <Panel images={aboutImages} interval={3500} />
+const CardSlider = () => {
+  const navigate = useNavigate();
+  return (
+    <>
+      <style>{css}</style>
+      <div style={{ display: "flex", gap: "12px", width: "100%", height: "clamp(220px, 45vw, 480px)" }}>
+        <div style={{ width: "60%", height: "100%", flexShrink: 0, borderRadius: "12px", overflow: "hidden" }}>
+          <Panel images={aboutImages} interval={3500} />
+        </div>
+        <div
+          onClick={() => navigate("/courses")}
+          style={{ width: "40%", height: "100%", flexShrink: 0, borderRadius: "12px", overflow: "hidden", cursor: "pointer" }}
+        >
+          <Panel images={coursesImages} interval={2800} />
+        </div>
       </div>
-      <div style={{ width: "40%", height: "100%", flexShrink: 0, borderRadius: "12px", overflow: "hidden" }}>
-        <Panel images={coursesImages} interval={2800} />
-      </div>
-    </div>
-  </>
-);
+    </>
+  );
+};
 
 export default CardSlider;
