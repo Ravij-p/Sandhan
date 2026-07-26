@@ -215,7 +215,9 @@ const AppContent = () => {
             className="rounded-2xl shadow-lg cursor-pointer overflow-hidden border hover:shadow-xl transition-shadow"
             style={{ borderColor: SECONDARY, backgroundColor: ACCENT }}
           >
-            <div className="h-40 flex items-center justify-center text-5xl" style={{ backgroundColor: PRIMARY }}>🖥</div>
+            <div className="h-40 overflow-hidden">
+              <img src="/online_class_thumbnail.png" alt="Online Courses" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
             <div className="p-5">
               <h3 className="text-xl font-bold mb-2" style={{ color: PRIMARY }}>Online Courses</h3>
               <p className="text-sm mb-4" style={{ color: PRIMARY, opacity: 0.75 }}>
@@ -236,7 +238,9 @@ const AppContent = () => {
             className="rounded-2xl shadow-lg cursor-pointer overflow-hidden border hover:shadow-xl transition-shadow"
             style={{ borderColor: SECONDARY, backgroundColor: ACCENT }}
           >
-            <div className="h-40 flex items-center justify-center text-5xl" style={{ backgroundColor: SECONDARY }}>🏫</div>
+            <div className="h-40 overflow-hidden">
+              <img src="/offline_class_thumbnail.png" alt="Classroom Programmes" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
             <div className="p-5">
               <h3 className="text-xl font-bold mb-2" style={{ color: PRIMARY }}>Classroom Programmes</h3>
               <p className="text-sm mb-4" style={{ color: PRIMARY, opacity: 0.75 }}>
@@ -257,7 +261,9 @@ const AppContent = () => {
             className="rounded-2xl shadow-lg cursor-pointer overflow-hidden border hover:shadow-xl transition-shadow"
             style={{ borderColor: SECONDARY, backgroundColor: ACCENT }}
           >
-            <div className="h-40 flex items-center justify-center text-5xl" style={{ backgroundColor: PRIMARY }}>📝</div>
+            <div className="h-40 overflow-hidden">
+              <img src="/test_series_thumbnail.png" alt="Test Series" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
             <div className="p-5">
               <h3 className="text-xl font-bold mb-2" style={{ color: PRIMARY }}>Test Series</h3>
               <p className="text-sm mb-4" style={{ color: PRIMARY, opacity: 0.75 }}>
