@@ -49,6 +49,8 @@ const CourseDetail = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
+  const [gender, setGender] = useState("");
+  const [address, setAddress] = useState("");
   const [formError, setFormError] = useState("");
 
   // Payment state
@@ -131,7 +133,7 @@ const CourseDetail = () => {
   }, [fetchCourse, fetchVideos, fetchMaterials, checkEnrollment, isAuthenticated, isStudent, isAdmin]);
 
   const openModal = () => {
-    setName(""); setEmail(""); setMobile("");
+    setName(""); setEmail(""); setMobile(""); setGender(""); setAddress("");
     setFormError(""); setPayError("");
     setStep("form"); setPricing(null);
     setReceiptNumber(null); setReceiptCourse(null);
@@ -152,6 +154,7 @@ const CourseDetail = () => {
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       return setFormError("Valid email is required");
     if (!/^\d{10}$/.test(mobile)) return setFormError("10-digit mobile number is required");
+    if (!gender) return setFormError("Please select your gender");
     
     // Check if mode is selected when both are available
     if (course.onlinePrice && course.offlinePrice && !selectedMode) {
@@ -179,7 +182,7 @@ const CourseDetail = () => {
     try {
       await loadRazorpay();
       const orderRes = await axios.post(`${API_BASE_URL}/payments/public/course/create-order`, {
-        courseId, name, email, mobile, selectedMode,
+        courseId, name, email, mobile, selectedMode, gender, address,
       });
       if (!orderRes.data.success) {
         setPayError(orderRes.data.error || "Failed to create order");
@@ -202,8 +205,7 @@ const CourseDetail = () => {
               razorpay_payment_id: rzpResponse.razorpay_payment_id,
               razorpay_signature: rzpResponse.razorpay_signature,
               courseId: courseData.id,
-              email, name, mobile,
-              selectedMode,
+              email, name, mobile, selectedMode, gender, address,
             });
             if (verifyRes.data.success) {
               setReceiptNumber(verifyRes.data.receiptNumber);
@@ -691,6 +693,36 @@ const CourseDetail = () => {
                     className="w-full px-3 py-2 border rounded-lg text-sm outline-none"
                     style={{ borderColor: SECONDARY, color: PRIMARY }}
                   />
+                  {/* Gender */}
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: PRIMARY }}>Gender *</label>
+                    <div className="flex gap-3">
+                      {["Male", "Female"].map((g) => (
+                        <button key={g} type="button"
+                          onClick={() => setGender(g)}
+                          className="flex-1 py-2 rounded-lg text-sm font-medium border transition-colors"
+                          style={{
+                            backgroundColor: gender === g ? PRIMARY : "transparent",
+                            color: gender === g ? ACCENT : PRIMARY,
+                            borderColor: PRIMARY,
+                          }}>
+                          {g}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Address */}
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: PRIMARY }}>Address *</label>
+                    <textarea
+                      value={address} onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Full address (required for magazine courier)"
+                      rows={3}
+                      className="w-full px-3 py-2 border rounded-lg text-sm outline-none resize-none"
+                      style={{ borderColor: SECONDARY, color: PRIMARY }}
+                    />
+                    <p className="text-xs mt-1" style={{ color: SECONDARY }}>📦 This address will be used for magazine courier delivery.</p>
+                  </div>
                   {formError && <p className="text-red-600 text-sm">{formError}</p>}
                   <button type="submit"
                     className="w-full py-3 rounded-lg font-semibold text-white"

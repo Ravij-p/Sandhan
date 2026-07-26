@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { ChevronDown, Menu, User, LogOut } from "lucide-react";
 import CoursePage from "./components/coursePages";
 import Header from "./components/Header";
-import CardSlider from "./CardSlider";
 import { Routes, Route, useNavigate, NavLink } from "react-router-dom";
 import { AboutPage } from "./components/aboutPage";
 import { TestSeriesPage } from "./components/testSeriesPage";
@@ -30,10 +29,11 @@ import CreateCoursePage from "./components/admin/CreateCoursePage";
 import AdminTestSeriesManagement from "./components/admin/AdminTestSeriesManagement";
 import AdminUpiApprovals from "./components/admin/AdminUpiApprovals";
 import ScrollToTop from "./components/ScrollToTop";
+import CardSlider from "./CardSlider";
 
-const PRIMARY = "#51596c";
-const SECONDARY = "#c6b9a9";
-const ACCENT = "#dad9d7";
+const PRIMARY = "#353841";
+const SECONDARY = "#C8B8A9";
+const ACCENT = "#fcfcfc";
 
 const AppContent = () => {
   const [isCoursesDropdownOpen, setIsCoursesDropdownOpen] = useState(false);
@@ -82,17 +82,25 @@ const AppContent = () => {
               <span>Courses</span><ChevronDown size={16} />
             </button>
             {isCoursesDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border min-w-48 z-50"
-                style={{ borderColor: SECONDARY }}>
+              <div className="absolute top-full left-0 mt-1 rounded-lg shadow-lg border min-w-56 z-50"
+                style={{ borderColor: SECONDARY, backgroundColor: ACCENT }}>
                 <button onClick={() => { navigate("/courses"); setIsCoursesDropdownOpen(false); }}
-                  className="block w-full text-left px-4 py-2 rounded-t-lg hover:opacity-80"
+                  className="block w-full text-left px-4 py-2 rounded-t-lg font-semibold text-sm hover:opacity-70"
                   style={{ color: PRIMARY }}>All Courses</button>
+                <div className="border-t mx-3" style={{ borderColor: SECONDARY }} />
+                <button onClick={() => { navigate("/courses?mode=online"); setIsCoursesDropdownOpen(false); }}
+                  className="block w-full text-left px-4 py-2 text-sm hover:opacity-70"
+                  style={{ color: PRIMARY }}>🖥 Online Courses</button>
+                <button onClick={() => { navigate("/courses?mode=offline"); setIsCoursesDropdownOpen(false); }}
+                  className="block w-full text-left px-4 py-2 text-sm hover:opacity-70"
+                  style={{ color: PRIMARY }}>🏫 Classroom Programmes</button>
+                <div className="border-t mx-3" style={{ borderColor: SECONDARY }} />
                 {loadingCourses
                   ? <div className="px-4 py-2 text-sm" style={{ color: SECONDARY }}>Loading...</div>
                   : courses.map((c, idx) => (
                     <button key={c._id}
                       onClick={() => { navigate(`/course/${c._id}`); setIsCoursesDropdownOpen(false); }}
-                      className={`block w-full text-left px-4 py-2 hover:opacity-80 ${idx === courses.length - 1 ? "rounded-b-lg" : ""}`}
+                      className={`block w-full text-left px-4 py-2 text-sm hover:opacity-70 ${idx === courses.length - 1 ? "rounded-b-lg" : ""}`}
                       style={{ color: PRIMARY }}>{c.title}</button>
                   ))}
               </div>
@@ -145,10 +153,14 @@ const AppContent = () => {
             {isCoursesDropdownOpen && (
               <div className="flex flex-col pl-4 space-y-1">
                 <button onClick={() => { navigate("/courses"); setIsMobileMenuOpen(false); }}
-                  className="w-full text-left px-2 py-1" style={{ color: SECONDARY }}>All Courses</button>
+                  className="w-full text-left px-2 py-1 font-semibold text-sm" style={{ color: SECONDARY }}>All Courses</button>
+                <button onClick={() => { navigate("/courses?mode=online"); setIsMobileMenuOpen(false); }}
+                  className="w-full text-left px-2 py-1 text-sm" style={{ color: SECONDARY }}>🖥 Online Courses</button>
+                <button onClick={() => { navigate("/courses?mode=offline"); setIsMobileMenuOpen(false); }}
+                  className="w-full text-left px-2 py-1 text-sm" style={{ color: SECONDARY }}>🏫 Classroom Programmes</button>
                 {courses.map((c) => (
                   <button key={c._id} onClick={() => { navigate(`/course/${c._id}`); setIsMobileMenuOpen(false); }}
-                    className="w-full text-left px-2 py-1" style={{ color: SECONDARY }}>{c.title}</button>
+                    className="w-full text-left px-2 py-1 text-sm" style={{ color: SECONDARY }}>{c.title}</button>
                 ))}
               </div>
             )}
@@ -185,61 +197,90 @@ const AppContent = () => {
     </nav>
   );
 
-  const CourseCards = () => {
-    const displayCourses = courses.slice(0, 6);
+  const HeroBanner = () => (
+    <div className="w-full px-4 sm:px-6 lg:px-8" style={{ paddingTop: "8px", paddingBottom: "8px" }}>
+      <CardSlider />
+    </div>
+  );
 
-    if (loadingCourses && courses.length === 0) {
-      return (
-        <div className="py-16" style={{ backgroundColor: ACCENT }}>
-          <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold mb-12" style={{ color: PRIMARY }}>Our Courses</h2>
-            <div className="flex justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: PRIMARY }}></div>
+  const CategorySection = () => (
+    <div className="py-14 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: ACCENT }}>
+      <div className="max-w-6xl mx-auto">
+        <h2 className="text-3xl font-bold text-center mb-10" style={{ color: PRIMARY }}>Explore Our Programmes</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+          {/* Online Courses */}
+          <div
+            onClick={() => navigate("/courses?mode=online")}
+            className="rounded-2xl shadow-lg cursor-pointer overflow-hidden border hover:shadow-xl transition-shadow"
+            style={{ borderColor: SECONDARY, backgroundColor: ACCENT }}
+          >
+            <div className="h-40 flex items-center justify-center text-5xl" style={{ backgroundColor: PRIMARY }}>🖥</div>
+            <div className="p-5">
+              <h3 className="text-xl font-bold mb-2" style={{ color: PRIMARY }}>Online Courses</h3>
+              <p className="text-sm mb-4" style={{ color: PRIMARY, opacity: 0.75 }}>
+                Learn from anywhere with our live and recorded video lectures, study material, and test series.
+              </p>
+              <button
+                className="w-full py-2 rounded-lg font-semibold text-sm"
+                style={{ backgroundColor: PRIMARY, color: ACCENT }}
+              >
+                View Online Courses
+              </button>
             </div>
           </div>
-        </div>
-      );
-    }
 
-    return (
-      <div className="py-16" style={{ backgroundColor: ACCENT }}>
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12" style={{ color: PRIMARY }}>Our Courses</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {displayCourses.map((course) => (
-              <div key={course._id}
-                onClick={() => navigate(`/course/${course._id}`)}
-                className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl cursor-pointer transform hover:scale-105 transition-all duration-300 border"
-                style={{ borderColor: SECONDARY }}>
-                <h3 className="text-xl font-bold mb-3" style={{ color: PRIMARY }}>{course.title}</h3>
-                <p className="mb-4 line-clamp-3 text-sm" style={{ color: PRIMARY, opacity: 0.75 }}>{course.description}</p>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-lg font-semibold" style={{ color: PRIMARY }}>
-                    {course.onlinePrice && course.offlinePrice
-                      ? `₹${course.onlinePrice.toLocaleString()} / ₹${course.offlinePrice.toLocaleString()}`
-                      : course.onlinePrice
-                      ? `₹${course.onlinePrice.toLocaleString()}`
-                      : course.offlinePrice
-                      ? `₹${course.offlinePrice.toLocaleString()}`
-                      : null}
-                  </span>
-                  <span className="text-sm" style={{ color: SECONDARY }}>{course.duration}</span>
-                </div>
-                <button className="px-4 py-2 rounded-lg font-medium w-full text-white" style={{ backgroundColor: PRIMARY }}>
-                  Explore Course
-                </button>
-              </div>
-            ))}
+          {/* Classroom Programmes */}
+          <div
+            onClick={() => navigate("/courses?mode=offline")}
+            className="rounded-2xl shadow-lg cursor-pointer overflow-hidden border hover:shadow-xl transition-shadow"
+            style={{ borderColor: SECONDARY, backgroundColor: ACCENT }}
+          >
+            <div className="h-40 flex items-center justify-center text-5xl" style={{ backgroundColor: SECONDARY }}>🏫</div>
+            <div className="p-5">
+              <h3 className="text-xl font-bold mb-2" style={{ color: PRIMARY }}>Classroom Programmes</h3>
+              <p className="text-sm mb-4" style={{ color: PRIMARY, opacity: 0.75 }}>
+                Join our offline batches for face-to-face coaching with expert faculty at our centre.
+              </p>
+              <button
+                className="w-full py-2 rounded-lg font-semibold text-sm"
+                style={{ backgroundColor: PRIMARY, color: ACCENT }}
+              >
+                View Classroom Programmes
+              </button>
+            </div>
           </div>
+
+          {/* Test Series */}
+          <div
+            onClick={() => navigate("/testSeries")}
+            className="rounded-2xl shadow-lg cursor-pointer overflow-hidden border hover:shadow-xl transition-shadow"
+            style={{ borderColor: SECONDARY, backgroundColor: ACCENT }}
+          >
+            <div className="h-40 flex items-center justify-center text-5xl" style={{ backgroundColor: PRIMARY }}>📝</div>
+            <div className="p-5">
+              <h3 className="text-xl font-bold mb-2" style={{ color: PRIMARY }}>Test Series</h3>
+              <p className="text-sm mb-4" style={{ color: PRIMARY, opacity: 0.75 }}>
+                Practice with our comprehensive mock tests and previous year papers to boost your score.
+              </p>
+              <button
+                className="w-full py-2 rounded-lg font-semibold text-sm"
+                style={{ backgroundColor: PRIMARY, color: ACCENT }}
+              >
+                View Test Series
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
-    );
-  };
+    </div>
+  );
 
   const HomePage = () => (
-    <div className="pt-40 sm:pt-36 md:pt-32 lg:pt-28">
-      <CardSlider />
-      <CourseCards />
+    <div className="pt-40 sm:pt-36 md:pt-32 lg:pt-28" style={{ backgroundColor: ACCENT }}>
+      <HeroBanner />
+      <CategorySection />
     </div>
   );
 
